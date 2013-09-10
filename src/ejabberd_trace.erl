@@ -63,10 +63,10 @@ match_session_pid(User, Domain) ->
       %% guards
       [],
       %% return
-      [{'$2', '$1'}]}].
+      [{{'$2', '$1'}}]}].
 
 session() ->
-    erlang:make_tuple(6, undefined).
+    set(erlang:make_tuple(6, '_'), [{1, session}]).
 
 %% @doc Set multiple fields of a record in one call.
 %% Usage:
