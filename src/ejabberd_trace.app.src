@@ -1,0 +1,12 @@
+{application, ejabberd_trace,
+ [
+  {description, ""},
+  {vsn, git},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, {ejabberd_trace_app, []}},
+  {env, []}
+ ]}.
