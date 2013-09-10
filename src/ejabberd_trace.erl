@@ -25,7 +25,9 @@ user(JID) ->
 user(JID, Flags) ->
     %% TODO: use ejabberd_sm to get the session list!
     {User, Domain} = jid_to_us(JID),
-    case ets:select(session, match_session_pid(User, Domain)) of
+    MatchSpec = match_session_pid(User, Domain),
+    error_logger:info_msg("Session match spec: ~p~n", [MatchSpec]),
+    case ets:select(session, MatchSpec) of
         [] ->
             {error, not_found};
         [{_, C2SPid}] ->
