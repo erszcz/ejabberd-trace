@@ -32,6 +32,8 @@ user(JID, Flags) ->
             {error, not_found};
         [{_, C2SPid}] ->
             dbg:p(C2SPid, Flags);
+        [C2SPid] ->
+            dbg:p(C2SPid, Flags);
         [_|_] = Sessions ->
             {error, {multiple_sessions, Sessions}}
     end.
@@ -64,7 +66,7 @@ match_session_pid({_User, _Domain, _Resource} = UDR) ->
       %% guards
       [],
       %% return
-      [{{UDR, '$1'}}]}];
+      ['$1']}];
 
 match_session_pid({User, Domain}) ->
     [{%% match pattern
