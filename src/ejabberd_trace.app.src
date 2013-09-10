@@ -7,6 +7,6 @@
                   kernel,
                   stdlib
                  ]},
-  {mod, {ejabberd_trace_app, []}},
+  {mod, {ejabberd_trace, []}},
   {env, []}
  ]}.
