@@ -11,7 +11,7 @@
 %% API
 %%
 
-%% @doc Trace a user given his/her bare JID.
+%% @doc Trace an already logged in user given his/her JID.
 %% @end
 -spec user(JID) -> ok when
       JID :: ejdtrace_jid().
@@ -24,8 +24,8 @@ user(JID) ->
 
 user(JID, Flags) ->
     %% TODO: use ejabberd_sm to get the session list!
-    {User, Domain} = jid_to_us(JID),
-    MatchSpec = match_session_pid(User, Domain),
+    UserSpec = parse_jid(JID),
+    MatchSpec = match_session_pid(UserSpec),
     error_logger:info_msg("Session match spec: ~p~n", [MatchSpec]),
     case ets:select(session, MatchSpec) of
         [] ->
@@ -36,26 +36,37 @@ user(JID, Flags) ->
             {error, {multiple_sessions, Sessions}}
     end.
 
-jid_to_us(JID) ->
-    jid_to_us(application:get_env(ejabberd_trace, string_type, list), JID).
+parse_jid(JID) ->
+    parse_jid(application:get_env(ejabberd_trace, string_type, list), JID).
 
--spec jid_to_us(StringType, JID) -> {User, Domain} when
+-spec parse_jid(StringType, JID) -> {User, Domain, Resource} |
+                                    {User, Domain} when
       StringType :: ejdtrace_string_type(),
       JID :: ejdtrace_jid(),
       User :: list() | binary(),
-      Domain :: list() | binary().
-jid_to_us(list, JID) ->
+      Domain :: list() | binary(),
+      Resource :: list() | binary().
+parse_jid(list, JID) ->
     case string:tokens(JID, "@/") of
-        [User, Domain, _] ->
-            {User, Domain};
+        [User, Domain, Resource] ->
+            {User, Domain, Resource};
         [User, Domain] ->
             {User, Domain}
     end;
-jid_to_us(binary, JID) ->
-    {User, Domain} = jid_to_us(list, JID),
-    {list_to_binary(User), list_to_binary(Domain)}.
+parse_jid(binary, JID) ->
+    list_to_tuple([list_to_binary(E)
+                   || E <- tuple_to_list(parse_jid(list, JID))]).
 
-match_session_pid(User, Domain) ->
+match_session_pid({_User, _Domain, _Resource} = UDR) ->
+    [{%% match pattern
+      set(session(), [{2, {'_', '$1'}},
+                      {3, UDR}]),
+      %% guards
+      [],
+      %% return
+      [{{UDR, '$1'}}]}];
+
+match_session_pid({User, Domain}) ->
     [{%% match pattern
       set(session(), [{2, {'_', '$1'}},
                       {3, '$2'},
