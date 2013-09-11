@@ -18,6 +18,10 @@ user(JID) ->
 %% Internal functions
 %%
 
+-spec user(ejt_jid(), [dbg_flag()]) -> {ok, any()} |
+                                       {error, not_found} |
+                                       {error, {multiple_sessions, list()}} |
+                                       {error, any()}.
 user(JID, Flags) ->
     %% TODO: use ejabberd_sm to get the session list!
     UserSpec = parse_jid(JID),
