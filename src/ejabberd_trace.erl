@@ -1,13 +1,35 @@
 -module(ejabberd_trace).
 
 %% API
--export([user/1]).
+-export([new_user/1,
+         user/1]).
 
 -include("ejabberd_trace_internal.hrl").
 
 %%
 %% API
 %%
+
+%% @doc Trace a user who is to connect in near future once he/she connects.
+%% This intends to trace *all* of the communication of a specific connection.
+%%
+%% The usage scenario is as follows:
+%% 1) `new_user/1,2' is called (e.g. from the shell) - the call blocks,
+%% 2) the user connects,
+%% 3) the call returns while the connection process responsible for `JID'
+%%    is being traced.
+%%
+%% The magic happens in step (2) as the connection process is involved
+%% and also more users than the one expected might connect.
+%% This function takes care of determining who of those who connected
+%% to trace based on his/her `JID'.
+%% In order to do that some stanza with the JID must already be sent
+%% on the connection - only then the matching may success.
+%% This function buffers all debug messages up to the point of receiving
+%% that stanza; then it forwards all the buffered messages for the traced user
+%% and discards all the rest.
+new_user(JID) ->
+    new_user(JID, m).
 
 %% @doc Trace an already logged in user given his/her JID.
 -spec user(ejt_jid()) -> ok.
@@ -17,6 +39,10 @@ user(JID) ->
 %%
 %% Internal functions
 %%
+
+-spec new_user(ejt_jid(), [dbg_flag()]) -> any().
+new_user(JID, Flags) ->
+    ejabberd_trace_server:trace_new_user(JID, Flags).
 
 -spec user(ejt_jid(), [dbg_flag()]) -> {ok, any()} |
                                        {error, not_found} |
