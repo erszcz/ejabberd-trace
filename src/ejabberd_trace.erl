@@ -3,7 +3,8 @@
 %% API
 -export([user/1]).
 
-%% Types
+-define(LIB, ejabberd_trace_lib).
+
 -type ejdtrace_jid() :: string().
 -type ejdtrace_string_type() :: list | binary.
 
@@ -39,7 +40,7 @@ user(JID, Flags) ->
     end.
 
 parse_jid(JID) ->
-    parse_jid(application:get_env(ejabberd_trace, string_type, list), JID).
+    parse_jid(?LIB:get_env(ejabberd_trace, string_type, list), JID).
 
 -spec parse_jid(StringType, JID) -> {User, Domain, Resource} |
                                     {User, Domain} when
