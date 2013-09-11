@@ -5,17 +5,15 @@
 
 -define(LIB, ejabberd_trace_lib).
 
--type ejdtrace_jid() :: string().
--type ejdtrace_string_type() :: list | binary.
+-type ejt_jid() :: string().
+-type ejt_string_type() :: list | binary.
 
 %%
 %% API
 %%
 
 %% @doc Trace an already logged in user given his/her JID.
-%% @end
--spec user(JID) -> ok when
-      JID :: ejdtrace_jid().
+-spec user(ejt_jid()) -> ok.
 user(JID) ->
     user(JID, m).
 
@@ -44,8 +42,8 @@ parse_jid(JID) ->
 
 -spec parse_jid(StringType, JID) -> {User, Domain, Resource} |
                                     {User, Domain} when
-      StringType :: ejdtrace_string_type(),
-      JID :: ejdtrace_jid(),
+      StringType :: ejt_string_type(),
+      JID :: ejt_jid(),
       User :: list() | binary(),
       Domain :: list() | binary(),
       Resource :: list() | binary().
