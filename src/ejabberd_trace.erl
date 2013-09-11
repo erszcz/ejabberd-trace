@@ -58,6 +58,8 @@ parse_jid(binary, JID) ->
     list_to_tuple([list_to_binary(E)
                    || E <- tuple_to_list(parse_jid(list, JID))]).
 
+-spec match_session_pid(UserSpec) -> ets:match_spec() when
+      UserSpec :: {string(), string(), string()} | {string(), string()}.
 match_session_pid({_User, _Domain, _Resource} = UDR) ->
     [{%% match pattern
       set(session(), [{2, {'_', '$1'}},
