@@ -14,6 +14,9 @@
          terminate/2,
          code_change/3]).
 
+%% dbg handler
+-export([trace_handler/2]).
+
 -include("ejabberd_trace_internal.hrl").
 
 -define(SERVER, ?MODULE).
