@@ -4,3 +4,4 @@
 
 -type ejt_jid() :: string().
 -type ejt_string_type() :: list | binary.
+-type ejt_xmlelement() :: any().
