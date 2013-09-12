@@ -37,6 +37,7 @@ trace_new_user(JID, Flags) ->
 
 init([]) ->
     traced_jids = ets:new(traced_jids, [named_table, public]),
+    setup_tracer(),
     {ok, #state{}}.
 
 handle_call({trace_new_user, JID, Flags}, _From, State) ->
@@ -61,6 +62,16 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 %% Internal functions
 %%
+
+setup_tracer() ->
+    %% TODO: Is the tracer running? Save the current trace patterns.
+    dbg:tracer({process, {fun trace_handler/2, fun dbg:dhandler/2}}),
+    dbg:p(get_c2s_sup(), [c, m, sos]),
+    dbg:tpl(ejabberd_c2s, send_text, x),
+    dbg:tpl(ejabberd_c2s, send_element, x).
+
+get_c2s_sup() ->
+    erlang:whereis(ejabberd_c2s_sup).
 
 %% Assume the tracer is already started and knows what to do.
 %% What does this handler do?
