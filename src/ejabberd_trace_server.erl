@@ -3,7 +3,8 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0]).
+-export([start_link/0,
+         trace_new_user/2]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -26,13 +27,21 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
+-spec trace_new_user(ejt_jid(), [dbg_flag()]) -> any().
+trace_new_user(JID, Flags) ->
+    gen_server:call(?SERVER, {trace_new_user, JID, Flags}).
+
 %%
 %% gen_server callbacks
 %%
 
 init([]) ->
+    traced_jids = ets:new(traced_jids, [named_table, public]),
     {ok, #state{}}.
 
+handle_call({trace_new_user, JID, Flags}, _From, State) ->
+    NewState = handle_trace_new_user(JID, Flags, State),
+    {noreply, NewState};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -52,3 +61,33 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 %% Internal functions
 %%
+
+%% Assume the tracer is already started and knows what to do.
+%% What does this handler do?
+%% It only adds one more JID/Flags to the to-be-traced set.
+handle_trace_new_user(JID, Flags, State) ->
+    ets:insert(traced_jids, {JID, Flags}),
+    State.
+
+trace_handler({trace, Pid, call,
+               {ejabberd_c2s, send_element, [_, BindResult]}} = T, Handler) ->
+    Handler(T),
+    cache_trace(T),
+    case ?LIB:extract_jid(BindResult) of
+        false ->
+            ok;
+        JID ->
+            do_trace_user(JID, Pid, Handler)
+    end,
+    Handler;
+trace_handler(Trace, Handler) ->
+    Handler(Trace),
+    cache_trace(Trace),
+    Handler.
+
+cache_trace(_Trace) ->
+    %% TODO: actually do cache
+    ok.
+
+do_trace_user(Jid, Pid, _Handler) ->
+    io:format(">>>>> fake trace: ~p ~p~n", [Jid, Pid]).
