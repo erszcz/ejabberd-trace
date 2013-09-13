@@ -36,7 +36,7 @@ trace_new_user(JID, Flags) ->
 %%
 
 init([]) ->
-    traced_jids = ets:new(traced_jids, [named_table, public]),
+    ?NEW_TRACES = ets:new(?NEW_TRACES, [named_table, public]),
     {ok, #state{}}.
 
 handle_call({trace_new_user, JID, Flags}, _From, State) ->
@@ -66,5 +66,5 @@ code_change(_OldVsn, State, _Extra) ->
 %% What does this handler do?
 %% It only adds one more JID/Flags to the to-be-traced set.
 handle_trace_new_user(JID, Flags, State) ->
-    ets:insert(traced_jids, {JID, Flags}),
+    ets:insert(?NEW_TRACES, {JID, Flags}),
     State.
