@@ -42,7 +42,7 @@ trace_handler({trace, Pid, call,
     io:format(">>>>> caught send_element~n", []),
     Handler(T, user),
     cache_trace(T),
-    case ?LIB:extract_jid(BindResult) of
+    case extract_jid(BindResult) of
         false ->
             ok;
         JID ->
