@@ -31,12 +31,15 @@ get_env(Application, Par, Def) ->
 extract_jid({XML, IQ, _, [{XML2, Bind, _, [JIDEl]}]} = IQ)
   when ?IS_IQ(XML, IQ) andalso ?IS_BIND(XML2, Bind) ->
     {_, _, _, {xmlcdata, JID}} = JIDEl,
+    io:format(">>>>> found JID: ~p~n", [JID]),
     JID;
 extract_jid(_) ->
+    io:format(">>>>> found no JID~n", []),
     false.
 
 trace_handler({trace, Pid, call,
                {ejabberd_c2s, send_element, [_, BindResult]}} = T, Handler) ->
+    io:format(">>>>> caught send_element~n", []),
     Handler(T, user),
     cache_trace(T),
     case ?LIB:extract_jid(BindResult) of
