@@ -3,6 +3,9 @@
 -export([get_env/3,
          extract_jid/1 ]).
 
+%% dbg handler
+-export([trace_handler/2]).
+
 -include("ejabberd_trace_internal.hrl").
 
 %% @doc Return `Application' environment variable `Par'.
@@ -31,3 +34,26 @@ extract_jid({XML, IQ, _, [{XML2, Bind, _, [JIDEl]}]} = IQ)
     JID;
 extract_jid(_) ->
     false.
+
+trace_handler({trace, Pid, call,
+               {ejabberd_c2s, send_element, [_, BindResult]}} = T, Handler) ->
+    Handler(T),
+    cache_trace(T),
+    case ?LIB:extract_jid(BindResult) of
+        false ->
+            ok;
+        JID ->
+            do_trace_user(JID, Pid, Handler)
+    end,
+    Handler;
+trace_handler(Trace, Handler) ->
+    Handler(Trace),
+    cache_trace(Trace),
+    Handler.
+
+cache_trace(_Trace) ->
+    %% TODO: actually do cache
+    ok.
+
+do_trace_user(Jid, Pid, _Handler) ->
+    io:format(">>>>> fake trace: ~p ~p~n", [Jid, Pid]).
