@@ -29,7 +29,7 @@ start_link() ->
 
 -spec trace_new_user(ejt_jid(), [dbg_flag()]) -> any().
 trace_new_user(JID, Flags) ->
-    gen_server:call(?SERVER, {trace_new_user, JID, Flags}).
+    gen_server:call(?SERVER, {trace_new_user, JID, Flags}, timer:seconds(20)).
 
 %%
 %% gen_server callbacks
