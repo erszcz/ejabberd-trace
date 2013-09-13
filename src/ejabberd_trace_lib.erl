@@ -68,3 +68,24 @@ do_trace_user(Jid, Pid, _Handler) ->
         [{Jid, _Flags, From}] ->
             ejabberd_trace_server ! {traced_new_user, From, ok}
     end.
+
+%%
+%% Tests
+%%
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+
+example_bind(Jid) ->
+    {xmlelement, "iq",
+     [{"id", "bind_1"},{"type", "result"}],
+     [{xmlelement, "bind",
+       [{"xmlns", "urn:ietf:params:xml:ns:xmpp-bind"}],
+       [{xmlelement, "jid",[],
+         [{xmlcdata, Jid}]}]}]}.
+
+extract_jid_test() ->
+    Jid = "qwe@localhost/x3",
+    ?assertEqual(Jid, extract_jid(example_bind(Jid))).
+
+-endif.
