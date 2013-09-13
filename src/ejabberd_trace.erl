@@ -1,9 +1,15 @@
 -module(ejabberd_trace).
 
+-behaviour(application).
+
 %% API
 -export([tracer/0,
          new_user/1,
          user/1]).
+
+%% `application' callbacks
+-export([start/2,
+         stop/1]).
 
 -include("ejabberd_trace_internal.hrl").
 
@@ -44,6 +50,16 @@ new_user(JID) ->
 -spec user(ejt_jid()) -> ok.
 user(JID) ->
     user(JID, m).
+
+%%
+%% `application' callbacks
+%%
+
+start(_StartType, _Args) ->
+    ejabberd_trace_sup:start_link().
+
+stop(_) ->
+    ok.
 
 %%
 %% Internal functions
