@@ -1,7 +1,8 @@
 -module(ejabberd_trace).
 
 %% API
--export([new_user/1,
+-export([tracer/0,
+         new_user/1,
          user/1]).
 
 -include("ejabberd_trace_internal.hrl").
@@ -9,6 +10,14 @@
 %%
 %% API
 %%
+
+tracer() ->
+    %% TODO: Is the tracer running? Save the current trace patterns.
+    dbg:tracer(process, {fun ?LIB:trace_handler/2, fun dbg:dhandler/2}),
+    dbg:p(get_c2s_sup(), [c, m, sos]),
+    dbg:tpl(ejabberd_c2s, send_text, x),
+    dbg:tpl(ejabberd_c2s, send_element, x),
+    ok.
 
 %% @doc Trace a user who is to connect in near future once he/she connects.
 %% This intends to trace *all* of the communication of a specific connection.
@@ -39,6 +48,10 @@ user(JID) ->
 %%
 %% Internal functions
 %%
+
+-spec get_c2s_sup() -> pid() | undefined.
+get_c2s_sup() ->
+    erlang:whereis(ejabberd_c2s_sup).
 
 -spec new_user(ejt_jid(), [dbg_flag()]) -> any().
 new_user(JID, Flags) ->
