@@ -28,9 +28,8 @@ get_env(Application, Par, Def) ->
         Bind =:= "bind" orelse Bind =:= <<"bind">>).
 
 -spec extract_jid(ejt_xmlelement()) -> ejt_jid() | false.
-extract_jid({XML, IQ, _, [{XML2, Bind, _, [JIDEl]}]} = IQ)
+extract_jid({XML, IQ, _, [{XML2, Bind, _, [{_, _, _, [{xmlcdata, JID}]}]}]})
   when ?IS_IQ(XML, IQ) andalso ?IS_BIND(XML2, Bind) ->
-    {_, _, _, {xmlcdata, JID}} = JIDEl,
     io:format(">>>>> found JID: ~p~n", [JID]),
     JID;
 extract_jid(_) ->
