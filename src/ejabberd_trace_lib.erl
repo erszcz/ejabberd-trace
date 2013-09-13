@@ -37,7 +37,7 @@ extract_jid(_) ->
 
 trace_handler({trace, Pid, call,
                {ejabberd_c2s, send_element, [_, BindResult]}} = T, Handler) ->
-    Handler(T),
+    Handler(T, user),
     cache_trace(T),
     case ?LIB:extract_jid(BindResult) of
         false ->
@@ -47,7 +47,7 @@ trace_handler({trace, Pid, call,
     end,
     Handler;
 trace_handler(Trace, Handler) ->
-    Handler(Trace),
+    Handler(Trace, user),
     cache_trace(Trace),
     Handler.
 
