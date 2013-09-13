@@ -39,8 +39,8 @@ init([]) ->
     ?NEW_TRACES = ets:new(?NEW_TRACES, [named_table, public]),
     {ok, #state{}}.
 
-handle_call({trace_new_user, JID, Flags}, _From, State) ->
-    NewState = handle_trace_new_user(JID, Flags, State),
+handle_call({trace_new_user, JID, Flags}, From, State) ->
+    NewState = handle_trace_new_user(JID, Flags, From, State),
     {noreply, NewState};
 handle_call(_Request, _From, State) ->
     Reply = ok,
@@ -49,6 +49,9 @@ handle_call(_Request, _From, State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
+handle_info({traced_new_user, From, TraceResult}, State) ->
+    gen_server:reply(From, TraceResult),
+    {noreply, State};
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -65,6 +68,6 @@ code_change(_OldVsn, State, _Extra) ->
 %% Assume the tracer is already started and knows what to do.
 %% What does this handler do?
 %% It only adds one more JID/Flags to the to-be-traced set.
-handle_trace_new_user(JID, Flags, State) ->
-    ets:insert(?NEW_TRACES, {JID, Flags}),
+handle_trace_new_user(JID, Flags, From, State) ->
+    ets:insert(?NEW_TRACES, {JID, Flags, From}),
     State.

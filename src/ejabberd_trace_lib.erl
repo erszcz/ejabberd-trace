@@ -56,4 +56,12 @@ cache_trace(_Trace) ->
     ok.
 
 do_trace_user(Jid, Pid, _Handler) ->
-    io:format(">>>>> fake trace: ~p ~p~n", [Jid, Pid]).
+    io:format(">>>>> fake trace: ~p ~p~n", [Jid, Pid]),
+    %% TODO: this Jid comes from unpacking an XML stanza
+    %%       so may require unescaping
+    case ets:lookup(?NEW_TRACES, Jid) of
+        [] ->
+            ok;
+        [{Jid, _Flags, From}] ->
+            ejabberd_trace_server ! {traced_new_user, From, ok}
+    end.
