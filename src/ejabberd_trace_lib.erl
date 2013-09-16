@@ -57,21 +57,17 @@ trace_handler(Trace, {_, TraceServer} = TState) ->
 %% select appropriately when flushing the cache.
 cache_trace({trace, From, _, _, To} = Trace, TraceServer) ->
     CacheEnabled = ejabberd_trace_server:get_cache(TraceServer),
-    io:format(">>>>> cache trace: cache enabled = ~p~n", [CacheEnabled]),
     do_cache(CacheEnabled, From, Trace),
     do_cache(CacheEnabled, To, Trace);
 cache_trace({trace, Pid, _, _} = Trace, TraceServer) ->
     CacheEnabled = ejabberd_trace_server:get_cache(TraceServer),
-    io:format(">>>>> cache trace: cache enabled = ~p~n", [CacheEnabled]),
     do_cache(CacheEnabled, Pid, Trace).
 
 do_cache(true, Pid, Trace) ->
     case ets:lookup(?TRACE_CACHE, Pid) of
         [] ->
-            io:format(">>>>> do cache: first trace for ~p~n", [Pid]),
             ets:insert(?TRACE_CACHE, {Pid, [Trace]});
         [{Pid, Traces}] ->
-            io:format(">>>>> do cache: appending trace for ~p~n", [Pid]),
             ets:insert(?TRACE_CACHE, {Pid, [Trace | Traces]})
     end;
 do_cache(false, _, _) ->
