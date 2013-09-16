@@ -40,7 +40,7 @@ trace_handler({trace, Pid, call,
                {ejabberd_c2s, send_element, [_, BindResult]}} = T,
               {Handler, TraceServer} = TState) ->
     io:format(">>>>> caught send_element~n", []),
-    cache_trace(T, TraceServer),
+    handle_trace(T, Pid, TState),
     case extract_jid(BindResult) of
         false ->
             ok;
@@ -48,9 +48,20 @@ trace_handler({trace, Pid, call,
             do_trace_user(JID, Pid, Handler, TraceServer)
     end,
     TState;
-trace_handler(Trace, {_, TraceServer} = TState) ->
-    cache_trace(Trace, TraceServer),
+trace_handler(Trace, TState) ->
+    handle_trace(Trace, element(2, Trace), TState),
     TState.
+
+handle_trace(Trace, Pid, {Handler, TraceServer}) ->
+    Action = ejabberd_trace_server:get_action(TraceServer, Pid),
+    do_handle_trace(Action, Trace, Handler).
+
+do_handle_trace(drop, _Trace, _Handler) ->
+    ok;
+do_handle_trace(cache, Trace, _Handler) ->
+    cache_trace(Trace);
+do_handle_trace(trace, Trace, Handler) ->
+    Handler(Trace, user).
 
 %% TODO: this is lame - message send/recv traces are stored twice
 %% so will be duplicated when printing. Store everything once (no key) and

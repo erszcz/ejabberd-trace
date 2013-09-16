@@ -8,7 +8,8 @@
 
 %% Internal API
 -export([set_cache/2,
-         get_cache/1]).
+         get_cache/1,
+         get_action/2]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -45,6 +46,9 @@ set_cache(TraceServer, Enabled) ->
 get_cache(TraceServer) ->
     gen_server:call(TraceServer, cache).
 
+get_action(TraceServer, Pid) ->
+    gen_server:call(TraceServer, {get_action, Pid}).
+
 %%
 %% gen_server callbacks
 %%
@@ -52,12 +56,19 @@ get_cache(TraceServer) ->
 init([]) ->
     ?NEW_TRACES = ets:new(?NEW_TRACES, [named_table, public]),
     ?TRACE_CACHE = ets:new(?TRACE_CACHE, [named_table, public]),
+    ?ACTIONS = ets:new(?ACTIONS, [named_table, public]),
     {ok, #state{}}.
 
 handle_call({cache, OnOff}, _From, #state{} = S) ->
     {reply, ok, S#state{cache = OnOff}};
 handle_call(cache, _From, #state{} = S) ->
     {reply, S#state.cache, S};
+handle_call({get_action, Pid}, _From, #state{} = S) ->
+    Action = handle_get_action(Pid, case S#state.cache of
+                                        true -> cache;
+                                        _ -> drop
+                                    end),
+    {reply, Action, S};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -68,6 +79,9 @@ handle_cast({trace_new_user, JID, Flags}, State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
+handle_info({traced_new_user, Jid, Pid}, State) ->
+    ets:insert(?ACTIONS, {Pid, Jid, trace}),
+    {noreply, State};
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -80,6 +94,14 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 %% Internal functions
 %%
+
+handle_get_action(Pid, Default) ->
+    case ets:lookup(?ACTIONS, Pid) of
+        [] ->
+            Default;
+        [{Pid, _, Action}] ->
+            Action
+    end.
 
 %% Assume the tracer is already started and knows what to do.
 %% What does this handler do?
