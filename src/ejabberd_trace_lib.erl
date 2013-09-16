@@ -37,7 +37,8 @@ extract_jid(_) ->
     false.
 
 trace_handler({trace, Pid, call,
-               {ejabberd_c2s, send_element, [_, BindResult]}} = T, Handler) ->
+               {ejabberd_c2s, send_element, [_, BindResult]}} = T,
+              {Handler, TraceServer} = TState) ->
     io:format(">>>>> caught send_element~n", []),
     Handler(T, user),
     cache_trace(T),
@@ -45,19 +46,19 @@ trace_handler({trace, Pid, call,
         false ->
             ok;
         JID ->
-            do_trace_user(JID, Pid, Handler)
+            do_trace_user(JID, Pid, Handler, TraceServer)
     end,
-    Handler;
-trace_handler(Trace, Handler) ->
+    TState;
+trace_handler(Trace, {Handler, _} = TState) ->
     Handler(Trace, user),
     cache_trace(Trace),
-    Handler.
+    TState.
 
 cache_trace(_Trace) ->
     %% TODO: actually do cache
     ok.
 
-do_trace_user(Jid, Pid, _Handler) ->
+do_trace_user(Jid, Pid, _Handler, TraceServer) ->
     io:format(">>>>> fake trace: ~p ~p~n", [Jid, Pid]),
     %% TODO: this Jid comes from unpacking an XML stanza
     %%       so may require unescaping
@@ -65,7 +66,7 @@ do_trace_user(Jid, Pid, _Handler) ->
         [] ->
             ok;
         [{Jid, _Flags, From}] ->
-            ejabberd_trace_server ! {traced_new_user, From, ok}
+            TraceServer ! {traced_new_user, From, ok}
     end.
 
 %%

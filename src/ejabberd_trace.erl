@@ -19,7 +19,8 @@
 
 tracer() ->
     %% TODO: Is the tracer running? Save the current trace patterns.
-    dbg:tracer(process, {fun ?LIB:trace_handler/2, fun dbg:dhandler/2}),
+    TracerState = {fun dbg:dhandler/2, erlang:whereis(ejabberd_trace_server)},
+    dbg:tracer(process, {fun ?LIB:trace_handler/2, TracerState}),
     dbg:p(get_c2s_sup(), [c, m, sos]),
     dbg:tpl(ejabberd_c2s, send_text, x),
     dbg:tpl(ejabberd_c2s, send_element, x),
