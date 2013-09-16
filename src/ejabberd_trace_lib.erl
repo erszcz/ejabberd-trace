@@ -52,7 +52,16 @@ trace_handler(Trace, TState) ->
     cache_trace(Trace),
     TState.
 
+%% TODO: this is lame - message send/recv traces are stored twice
+%% so will be duplicated when printing. Store everything once (no key) and
+%% select appropriately when flushing the cache.
+cache_trace({trace, From, _, _, To} = Trace) ->
+    do_cache(From, Trace),
+    do_cache(To, Trace);
 cache_trace({trace, Pid, _, _} = Trace) ->
+    do_cache(Pid, Trace).
+
+do_cache(Pid, Trace) ->
     case ets:lookup(?TRACE_CACHE, Pid) of
         [] ->
             ets:insert(?TRACE_CACHE, {Pid, [Trace]});
