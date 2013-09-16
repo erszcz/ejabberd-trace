@@ -37,6 +37,7 @@ trace_new_user(JID, Flags) ->
 
 init([]) ->
     ?NEW_TRACES = ets:new(?NEW_TRACES, [named_table, public]),
+    ?TRACE_CACHE = ets:new(?TRACE_CACHE, [named_table, public]),
     {ok, #state{}}.
 
 handle_call({trace_new_user, JID, Flags}, From, State) ->

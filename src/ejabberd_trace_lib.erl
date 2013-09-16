@@ -40,7 +40,6 @@ trace_handler({trace, Pid, call,
                {ejabberd_c2s, send_element, [_, BindResult]}} = T,
               {Handler, TraceServer} = TState) ->
     io:format(">>>>> caught send_element~n", []),
-    Handler(T, user),
     cache_trace(T),
     case extract_jid(BindResult) of
         false ->
@@ -49,14 +48,17 @@ trace_handler({trace, Pid, call,
             do_trace_user(JID, Pid, Handler, TraceServer)
     end,
     TState;
-trace_handler(Trace, {Handler, _} = TState) ->
-    Handler(Trace, user),
+trace_handler(Trace, TState) ->
     cache_trace(Trace),
     TState.
 
-cache_trace(_Trace) ->
-    %% TODO: actually do cache
-    ok.
+cache_trace({trace, Pid, _, _} = Trace) ->
+    case ets:lookup(?TRACE_CACHE, Pid) of
+        [] ->
+            ets:insert(?TRACE_CACHE, {Pid, [Trace]});
+        [{Pid, Traces}] ->
+            ets:insert(?TRACE_CACHE, {Pid, [Trace | Traces]})
+    end.
 
 do_trace_user(Jid, Pid, _Handler, TraceServer) ->
     io:format(">>>>> fake trace: ~p ~p~n", [Jid, Pid]),
