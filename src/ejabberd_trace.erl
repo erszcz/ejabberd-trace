@@ -3,7 +3,8 @@
 -behaviour(application).
 
 %% API
--export([tracer/0,
+-export([start/0,
+         tracer/0,
          new_user/1,
          user/1]).
 
@@ -17,7 +18,12 @@
 %% API
 %%
 
+start() ->
+    application:start(ejabberd_trace),
+    ejabberd_trace:tracer().
+
 tracer() ->
+    ensure_running(),
     %% TODO: Is the tracer running? Save the current trace patterns.
     TracerState = {fun dbg:dhandler/2, erlang:whereis(ejabberd_trace_server)},
     dbg:tracer(process, {fun ?LIB:trace_handler/2, TracerState}),
@@ -66,12 +72,21 @@ stop(_) ->
 %% Internal functions
 %%
 
+ensure_running() ->
+    case lists:keymember(ejabberd_trace, 1, application:which_applications()) of
+        true ->
+            ok;
+        false ->
+            ejabberd_trace:start()
+    end.
+
 -spec get_c2s_sup() -> pid() | undefined.
 get_c2s_sup() ->
     erlang:whereis(ejabberd_c2s_sup).
 
 -spec new_user(ejt_jid(), [dbg_flag()]) -> any().
 new_user(JID, Flags) ->
+    ensure_running(),
     ejabberd_trace_server:trace_new_user(JID, Flags).
 
 -spec user(ejt_jid(), [dbg_flag()]) -> {ok, any()} |
