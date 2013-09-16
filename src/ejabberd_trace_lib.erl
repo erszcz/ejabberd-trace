@@ -88,21 +88,21 @@ do_trace_user(Jid, Pid, Handler, TraceServer) ->
         [{Jid, _Flags, From}] ->
             io:format(">>>>> fake trace: tracing ~n", []),
             ets:delete(?NEW_TRACES, Jid),
-            flush_cache(Jid, Handler),
+            flush_cache(Pid, Handler),
             maybe_disable_cache(TraceServer),
             TraceServer ! {traced_new_user, From, ok}
     end.
 
-flush_cache(Jid, Handler) ->
-    io:format(">>>>> flush cache: ~p: ", [Jid]),
-    case ets:lookup(?TRACE_CACHE, Jid) of
+flush_cache(Pid, Handler) ->
+    io:format(">>>>> flush cache: ~p: ", [Pid]),
+    case ets:lookup(?TRACE_CACHE, Pid) of
         [] ->
-            io:format("no traces for ~p~n", [Jid]),
+            io:format("no traces for ~p~n", [Pid]),
             ok;
-        [{Jid, Traces}] ->
+        [{Pid, Traces}] ->
             io:format("~p traces~n", [length(Traces)]),
             [Handler(Trace, user) || Trace <- lists:reverse(Traces)],
-            ets:delete(?TRACE_CACHE, Jid)
+            ets:delete(?TRACE_CACHE, Pid)
     end.
 
 maybe_disable_cache(TraceServer) ->
