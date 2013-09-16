@@ -33,7 +33,7 @@ start_link() ->
 
 -spec trace_new_user(ejt_jid(), [dbg_flag()]) -> any().
 trace_new_user(JID, Flags) ->
-    gen_server:call(?SERVER, {trace_new_user, JID, Flags}, timer:seconds(20)).
+    gen_server:cast(?SERVER, {trace_new_user, JID, Flags}).
 
 %%
 %% Internal API
@@ -54,9 +54,6 @@ init([]) ->
     ?TRACE_CACHE = ets:new(?TRACE_CACHE, [named_table, public]),
     {ok, #state{}}.
 
-handle_call({trace_new_user, JID, Flags}, From, State) ->
-    NewState = handle_trace_new_user(JID, Flags, From, State),
-    {noreply, NewState};
 handle_call({cache, OnOff}, _From, #state{} = S) ->
     {reply, ok, S#state{cache = OnOff}};
 handle_call(cache, _From, #state{} = S) ->
@@ -65,12 +62,12 @@ handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
+handle_cast({trace_new_user, JID, Flags}, State) ->
+    NewState = handle_trace_new_user(JID, Flags, State),
+    {noreply, NewState};
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-handle_info({traced_new_user, From, TraceResult}, State) ->
-    gen_server:reply(From, TraceResult),
-    {noreply, State};
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -87,6 +84,6 @@ code_change(_OldVsn, State, _Extra) ->
 %% Assume the tracer is already started and knows what to do.
 %% What does this handler do?
 %% It only adds one more JID/Flags to the to-be-traced set.
-handle_trace_new_user(JID, Flags, From, #state{} = S) ->
-    ets:insert(?NEW_TRACES, {JID, Flags, From}),
+handle_trace_new_user(JID, Flags, #state{} = S) ->
+    ets:insert(?NEW_TRACES, {JID, Flags}),
     S#state{cache = true}.
