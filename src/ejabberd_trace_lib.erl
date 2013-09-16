@@ -92,7 +92,8 @@ do_trace_user(Jid, Pid, Handler, TraceServer) ->
             io:format(">>>>> fake trace: tracing ~n", []),
             ets:delete(?NEW_TRACES, Jid),
             flush_cache(Pid, Handler),
-            maybe_disable_cache(TraceServer)
+            maybe_disable_cache(TraceServer),
+            TraceServer ! {traced_new_user, Jid, Pid}
     end.
 
 flush_cache(Pid, Handler) ->
