@@ -4,7 +4,7 @@
 
 %% API
 -export([start/0,
-         tracer/0,
+         tracer/0, tracer/1,
          new_user/1,
          user/1]).
 
@@ -23,10 +23,14 @@ start() ->
     ejabberd_trace:tracer().
 
 tracer() ->
+    tracer([]).
+
+tracer(Nodes) ->
     ensure_running(),
     %% TODO: Is the tracer running? Save the current trace patterns.
     TracerState = {fun dbg:dhandler/2, erlang:whereis(ejabberd_trace_server)},
     dbg:tracer(process, {fun ?LIB:trace_handler/2, TracerState}),
+    [dbg:n(Node) || Node <- Nodes],
     dbg:p(get_c2s_sup(), [c, m, sos]),
     dbg:tpl(ejabberd_c2s, send_text, x),
     dbg:tpl(ejabberd_c2s, send_element, x),
