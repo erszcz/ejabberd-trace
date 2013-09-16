@@ -19,6 +19,7 @@
 %%
 
 start() ->
+    application:start(sasl),
     application:start(ejabberd_trace),
     ejabberd_trace:tracer().
 
