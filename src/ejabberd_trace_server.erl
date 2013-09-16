@@ -6,6 +6,10 @@
 -export([start_link/0,
          trace_new_user/2]).
 
+%% Internal API
+-export([set_cache/2,
+         get_cache/1]).
+
 %% gen_server callbacks
 -export([init/1,
          handle_call/3,
@@ -18,7 +22,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {}).
+-record(state, {cache = false}).
 
 %%
 %% API
@@ -32,6 +36,16 @@ trace_new_user(JID, Flags) ->
     gen_server:call(?SERVER, {trace_new_user, JID, Flags}, timer:seconds(20)).
 
 %%
+%% Internal API
+%%
+
+set_cache(TraceServer, Enabled) ->
+    gen_server:call(TraceServer, {cache, Enabled}).
+
+get_cache(TraceServer) ->
+    gen_server:call(TraceServer, cache).
+
+%%
 %% gen_server callbacks
 %%
 
@@ -43,6 +57,10 @@ init([]) ->
 handle_call({trace_new_user, JID, Flags}, From, State) ->
     NewState = handle_trace_new_user(JID, Flags, From, State),
     {noreply, NewState};
+handle_call({cache, OnOff}, _From, #state{} = S) ->
+    {reply, ok, S#state{cache = OnOff}};
+handle_call(cache, _From, #state{} = S) ->
+    {reply, S#state.cache, S};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -69,6 +87,6 @@ code_change(_OldVsn, State, _Extra) ->
 %% Assume the tracer is already started and knows what to do.
 %% What does this handler do?
 %% It only adds one more JID/Flags to the to-be-traced set.
-handle_trace_new_user(JID, Flags, From, State) ->
+handle_trace_new_user(JID, Flags, From, #state{} = S) ->
     ets:insert(?NEW_TRACES, {JID, Flags, From}),
-    State.
+    S#state{cache = true}.

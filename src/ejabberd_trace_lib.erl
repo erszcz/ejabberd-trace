@@ -40,7 +40,7 @@ trace_handler({trace, Pid, call,
                {ejabberd_c2s, send_element, [_, BindResult]}} = T,
               {Handler, TraceServer} = TState) ->
     io:format(">>>>> caught send_element~n", []),
-    cache_trace(T),
+    cache_trace(T, TraceServer),
     case extract_jid(BindResult) of
         false ->
             ok;
@@ -48,28 +48,32 @@ trace_handler({trace, Pid, call,
             do_trace_user(JID, Pid, Handler, TraceServer)
     end,
     TState;
-trace_handler(Trace, TState) ->
-    cache_trace(Trace),
+trace_handler(Trace, {_, TraceServer} = TState) ->
+    cache_trace(Trace, TraceServer),
     TState.
 
 %% TODO: this is lame - message send/recv traces are stored twice
 %% so will be duplicated when printing. Store everything once (no key) and
 %% select appropriately when flushing the cache.
-cache_trace({trace, From, _, _, To} = Trace) ->
-    do_cache(From, Trace),
-    do_cache(To, Trace);
-cache_trace({trace, Pid, _, _} = Trace) ->
-    do_cache(Pid, Trace).
+cache_trace({trace, From, _, _, To} = Trace, TraceServer) ->
+    CacheEnabled = ejabberd_trace_server:get_cache(TraceServer),
+    do_cache(CacheEnabled, From, Trace),
+    do_cache(CacheEnabled, To, Trace);
+cache_trace({trace, Pid, _, _} = Trace, TraceServer) ->
+    CacheEnabled = ejabberd_trace_server:get_cache(TraceServer),
+    do_cache(CacheEnabled, Pid, Trace).
 
-do_cache(Pid, Trace) ->
+do_cache(true, Pid, Trace) ->
     case ets:lookup(?TRACE_CACHE, Pid) of
         [] ->
             ets:insert(?TRACE_CACHE, {Pid, [Trace]});
         [{Pid, Traces}] ->
             ets:insert(?TRACE_CACHE, {Pid, [Trace | Traces]})
-    end.
+    end;
+do_cache(false, _, _) ->
+    ok.
 
-do_trace_user(Jid, Pid, _Handler, TraceServer) ->
+do_trace_user(Jid, Pid, Handler, TraceServer) ->
     io:format(">>>>> fake trace: ~p ~p~n", [Jid, Pid]),
     %% TODO: this Jid comes from unpacking an XML stanza
     %%       so may require unescaping
@@ -77,7 +81,28 @@ do_trace_user(Jid, Pid, _Handler, TraceServer) ->
         [] ->
             ok;
         [{Jid, _Flags, From}] ->
+            ets:delete(?NEW_TRACES, Jid),
+            flush_cache(Jid, Handler),
+            maybe_disable_cache(TraceServer),
             TraceServer ! {traced_new_user, From, ok}
+    end.
+
+flush_cache(Jid, Handler) ->
+    case ets:lookup(?TRACE_CACHE, Jid) of
+        [] ->
+            ok;
+        [{Jid, Traces}] ->
+            [Handler(Trace, user) || Trace <- lists:reverse(Traces)],
+            ets:delete(?TRACE_CACHE, Jid)
+    end.
+
+maybe_disable_cache(TraceServer) ->
+    case ets:info(?NEW_TRACES, size) of
+        0 ->
+            ejabberd_trace_server:set_cache(TraceServer, false),
+            ets:delete_all_objects(?TRACE_CACHE);
+        _ ->
+            ok
     end.
 
 %%
