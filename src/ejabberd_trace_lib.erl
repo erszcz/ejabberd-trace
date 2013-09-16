@@ -57,17 +57,21 @@ trace_handler(Trace, {_, TraceServer} = TState) ->
 %% select appropriately when flushing the cache.
 cache_trace({trace, From, _, _, To} = Trace, TraceServer) ->
     CacheEnabled = ejabberd_trace_server:get_cache(TraceServer),
+    io:format(">>>>> cache trace: cache enabled = ~p~n", [CacheEnabled]),
     do_cache(CacheEnabled, From, Trace),
     do_cache(CacheEnabled, To, Trace);
 cache_trace({trace, Pid, _, _} = Trace, TraceServer) ->
     CacheEnabled = ejabberd_trace_server:get_cache(TraceServer),
+    io:format(">>>>> cache trace: cache enabled = ~p~n", [CacheEnabled]),
     do_cache(CacheEnabled, Pid, Trace).
 
 do_cache(true, Pid, Trace) ->
     case ets:lookup(?TRACE_CACHE, Pid) of
         [] ->
+            io:format(">>>>> do cache: first trace for ~p~n", [Pid]),
             ets:insert(?TRACE_CACHE, {Pid, [Trace]});
         [{Pid, Traces}] ->
+            io:format(">>>>> do cache: appending trace for ~p~n", [Pid]),
             ets:insert(?TRACE_CACHE, {Pid, [Trace | Traces]})
     end;
 do_cache(false, _, _) ->
@@ -79,8 +83,10 @@ do_trace_user(Jid, Pid, Handler, TraceServer) ->
     %%       so may require unescaping
     case ets:lookup(?NEW_TRACES, Jid) of
         [] ->
+            io:format(">>>>> fake trace: not tracing~n", []),
             ok;
         [{Jid, _Flags, From}] ->
+            io:format(">>>>> fake trace: tracing ~n", []),
             ets:delete(?NEW_TRACES, Jid),
             flush_cache(Jid, Handler),
             maybe_disable_cache(TraceServer),
@@ -88,10 +94,13 @@ do_trace_user(Jid, Pid, Handler, TraceServer) ->
     end.
 
 flush_cache(Jid, Handler) ->
+    io:format(">>>>> flush cache: ~p: ", [Jid]),
     case ets:lookup(?TRACE_CACHE, Jid) of
         [] ->
+            io:format("no traces for ~p~n", [Jid]),
             ok;
         [{Jid, Traces}] ->
+            io:format("~p traces~n", [length(Traces)]),
             [Handler(Trace, user) || Trace <- lists:reverse(Traces)],
             ets:delete(?TRACE_CACHE, Jid)
     end.
