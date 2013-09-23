@@ -4,6 +4,7 @@
 -define(ACTIONS, ejt_actions).
 
 -type dbg_flag() :: s | r | m | c | p | sos | sol | sofs | sofl | all | clear.
+-type sys_status() :: {status, pid(), {module, module()}, [any()]}.
 
 -type ejt_jid() :: string().
 -type ejt_string_type() :: list | binary.

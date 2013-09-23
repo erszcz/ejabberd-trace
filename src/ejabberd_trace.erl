@@ -6,7 +6,8 @@
 -export([start/0,
          tracer/0, tracer/1,
          new_user/1,
-         user/1]).
+         user/1,
+         state/1]).
 
 %% `application' callbacks
 -export([start/2,
@@ -62,6 +63,23 @@ new_user(JID) ->
 -spec user(ejt_jid()) -> ok.
 user(JID) ->
     user(JID, m).
+
+%% @doc Return sys:get_status/1 result of the process corresponding to Jid.
+-spec state(ejt_jid()) -> sys_status().
+state(Jid) ->
+    UserSpec = parse_jid(Jid),
+    MatchSpec = match_session_pid(UserSpec),
+    error_logger:info_msg("Session match spec: ~p~n", [MatchSpec]),
+    case ets:select(session, MatchSpec) of
+        [] ->
+            {error, not_found};
+        [{_, C2SPid}] ->
+            sys:get_status(C2SPid);
+        [C2SPid] ->
+            sys:get_status(C2SPid);
+        [_|_] = Sessions ->
+            {error, {multiple_sessions, Sessions}}
+    end.
 
 %%
 %% `application' callbacks
