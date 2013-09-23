@@ -28,12 +28,12 @@ get_env(Application, Par, Def) ->
         Bind =:= "bind" orelse Bind =:= <<"bind">>).
 
 -spec extract_jid(ejt_xmlelement()) -> ejt_jid() | false.
-extract_jid({XML, IQ, _, [{XML2, Bind, _, [{_, _, _, [{xmlcdata, JID}]}]}]})
+extract_jid({XML, IQ, _, [{XML2, Bind, _, [{_, _, _, [{xmlcdata, Jid}]}]}]})
   when ?IS_IQ(XML, IQ) andalso ?IS_BIND(XML2, Bind) ->
-    io:format(">>>>> found JID: ~p~n", [JID]),
-    JID;
+    io:format(">>>>> found Jid: ~p~n", [Jid]),
+    Jid;
 extract_jid(_) ->
-    io:format(">>>>> found no JID~n", []),
+    io:format(">>>>> found no Jid~n", []),
     false.
 
 trace_handler({trace, Pid, call,
@@ -44,8 +44,8 @@ trace_handler({trace, Pid, call,
     case extract_jid(BindResult) of
         false ->
             ok;
-        JID ->
-            do_trace_user(JID, Pid, Handler, TraceServer)
+        Jid ->
+            do_trace_user(Jid, Pid, Handler, TraceServer)
     end,
     TState;
 trace_handler(Trace, TState) ->

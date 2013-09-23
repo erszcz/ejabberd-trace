@@ -33,8 +33,8 @@ start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 -spec trace_new_user(ejt_jid(), [dbg_flag()]) -> any().
-trace_new_user(JID, Flags) ->
-    gen_server:cast(?SERVER, {trace_new_user, JID, Flags}).
+trace_new_user(Jid, Flags) ->
+    gen_server:cast(?SERVER, {trace_new_user, Jid, Flags}).
 
 %%
 %% Internal API
@@ -73,8 +73,8 @@ handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
-handle_cast({trace_new_user, JID, Flags}, State) ->
-    NewState = handle_trace_new_user(JID, Flags, State),
+handle_cast({trace_new_user, Jid, Flags}, State) ->
+    NewState = handle_trace_new_user(Jid, Flags, State),
     {noreply, NewState};
 handle_cast(_Msg, State) ->
     {noreply, State}.
@@ -105,7 +105,8 @@ handle_get_action(Pid, Default) ->
 
 %% Assume the tracer is already started and knows what to do.
 %% What does this handler do?
-%% It only adds one more JID/Flags to the to-be-traced set.
-handle_trace_new_user(JID, Flags, #state{} = S) ->
-    ets:insert(?NEW_TRACES, {JID, Flags}),
+%% It only adds one more Jid/Flags to the to-be-traced set.
+handle_trace_new_user(Jid, Flags, #state{} = S) ->
+    io:format(">>>>> handle trace new user: ~p~n", [Jid]),
+    ets:insert(?NEW_TRACES, {Jid, Flags}),
     S#state{cache = true}.

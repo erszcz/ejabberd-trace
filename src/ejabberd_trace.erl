@@ -44,25 +44,25 @@ tracer(Nodes) ->
 %% The usage scenario is as follows:
 %% 1) `new_user/1,2' is called (e.g. from the shell) - the call blocks,
 %% 2) the user connects,
-%% 3) the call returns while the connection process responsible for `JID'
+%% 3) the call returns while the connection process responsible for `Jid'
 %%    is being traced.
 %%
 %% The magic happens in step (2) as the connection process is involved
 %% and also more users than the one expected might connect.
 %% This function takes care of determining who of those who connected
-%% to trace based on his/her `JID'.
-%% In order to do that some stanza with the JID must already be sent
+%% to trace based on his/her `Jid'.
+%% In order to do that some stanza with the Jid must already be sent
 %% on the connection - only then the matching may success.
 %% This function buffers all debug messages up to the point of receiving
 %% that stanza; then it forwards all the buffered messages for the traced user
 %% and discards all the rest.
-new_user(JID) ->
-    new_user(JID, m).
+new_user(Jid) ->
+    new_user(Jid, m).
 
-%% @doc Trace an already logged in user given his/her JID.
+%% @doc Trace an already logged in user given his/her Jid.
 -spec user(ejt_jid()) -> ok.
-user(JID) ->
-    user(JID, m).
+user(Jid) ->
+    user(Jid, m).
 
 %% @doc Return sys:get_status/1 result of the process corresponding to Jid.
 -spec state(ejt_jid()) -> sys_status().
@@ -108,17 +108,17 @@ get_c2s_sup() ->
     erlang:whereis(ejabberd_c2s_sup).
 
 -spec new_user(ejt_jid(), [dbg_flag()]) -> any().
-new_user(JID, Flags) ->
+new_user(Jid, Flags) ->
     ensure_running(),
-    ejabberd_trace_server:trace_new_user(JID, Flags).
+    ejabberd_trace_server:trace_new_user(Jid, Flags).
 
 -spec user(ejt_jid(), [dbg_flag()]) -> {ok, any()} |
                                        {error, not_found} |
                                        {error, {multiple_sessions, list()}} |
                                        {error, any()}.
-user(JID, Flags) ->
+user(Jid, Flags) ->
     %% TODO: use ejabberd_sm to get the session list!
-    UserSpec = parse_jid(JID),
+    UserSpec = parse_jid(Jid),
     MatchSpec = match_session_pid(UserSpec),
     error_logger:info_msg("Session match spec: ~p~n", [MatchSpec]),
     case ets:select(session, MatchSpec) of
@@ -132,26 +132,26 @@ user(JID, Flags) ->
             {error, {multiple_sessions, Sessions}}
     end.
 
-parse_jid(JID) ->
-    parse_jid(?LIB:get_env(ejabberd_trace, string_type, list), JID).
+parse_jid(Jid) ->
+    parse_jid(?LIB:get_env(ejabberd_trace, string_type, list), Jid).
 
--spec parse_jid(StringType, JID) -> {User, Domain, Resource} |
+-spec parse_jid(StringType, Jid) -> {User, Domain, Resource} |
                                     {User, Domain} when
       StringType :: ejt_string_type(),
-      JID :: ejt_jid(),
+      Jid :: ejt_jid(),
       User :: list() | binary(),
       Domain :: list() | binary(),
       Resource :: list() | binary().
-parse_jid(list, JID) ->
-    case string:tokens(JID, "@/") of
+parse_jid(list, Jid) ->
+    case string:tokens(Jid, "@/") of
         [User, Domain, Resource] ->
             {User, Domain, Resource};
         [User, Domain] ->
             {User, Domain}
     end;
-parse_jid(binary, JID) ->
+parse_jid(binary, Jid) ->
     list_to_tuple([list_to_binary(E)
-                   || E <- tuple_to_list(parse_jid(list, JID))]).
+                   || E <- tuple_to_list(parse_jid(list, Jid))]).
 
 -spec match_session_pid(UserSpec) -> ets:match_spec() when
       UserSpec :: {string(), string(), string()} | {string(), string()}.
