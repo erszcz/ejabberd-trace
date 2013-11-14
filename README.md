@@ -23,3 +23,14 @@ If you don't specify a resource and there are multiple available:
                                 <0.327.0>},
                                {{"asd","localhost","x3"},<0.307.0>}]}}
     > ejabberd_trace:user("asd@localhost/x3").
+
+## Filters
+
+- `raw_traces` - all raw trace messages
+- `dbg` - all trace messages as formatted by dbg
+- `tx` / `socket_out` - messages sent on socket as formatted by dbg
+- `rx` / `socket_in` - messages received on socket as formatted by dbg
+- `routed_out` - messages routed to the c2s process from other parts
+-                of the server
+- `routed_in` - messages routed by the c2s process to other part of the
+-               server

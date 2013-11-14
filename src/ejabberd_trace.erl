@@ -3,7 +3,7 @@
 -behaviour(application).
 
 %% API
--export([new_user/1, new_user/2, new_user/3,
+-export([new_user/1, new_user/2, new_user/4,
          user/1,
          state/1]).
 
@@ -26,6 +26,9 @@
 
 -type xmlelement() :: any().
 -export_type([xmlelement/0]).
+
+-type filter() :: raw_traces | dbg | tx | rx | routed_out | routed_in.
+-export_type([filter/0]).
 
 -include("ejabberd_trace_internal.hrl").
 
@@ -57,13 +60,20 @@
 new_user(Jid) ->
     new_user(Jid, m).
 
--spec new_user(jid(), [dbg_flag()]) -> any() | no_return().
-new_user(Jid, Flags) ->
-    new_user(Jid, Flags, []).
+-spec new_user(jid(), filter() | [dbg_flag()]) -> any() | no_return().
+new_user(Jid, FilterOrFlags) ->
+    case is_filter(FilterOrFlags) of
+        true ->
+            Filter = FilterOrFlags,
+            new_user(Jid, m, [], Filter);
+        false ->
+            Flags = FilterOrFlags,
+            new_user(Jid, Flags, [], dbg)
+    end.
 
--spec new_user(jid(), [dbg_flag()], [node()]) -> any() | no_return().
-new_user(Jid, Flags, Nodes) ->
-    start_new_user_tracer(Nodes),
+-spec new_user(jid(), [dbg_flag()], [node()], filter()) -> any() | no_return().
+new_user(Jid, Flags, Nodes, Filter) ->
+    start_new_user_tracer(Nodes, Filter),
     ejabberd_trace_server:trace_new_user(Jid, Flags).
 
 %% @doc Trace an already logged in user given his/her Jid.
@@ -130,6 +140,15 @@ stop(_) ->
 %% Internal functions
 %%
 
+-spec is_filter(filter()) -> boolean().
+is_filter(raw_traces) -> true;
+is_filter(dbg) -> true;
+is_filter(tx) -> true;
+is_filter(rx) -> true;
+is_filter(routed_out) -> true;
+is_filter(routed_in) -> true;
+is_filter(_) -> false.
+
 -spec get_c2s_sup() -> pid() | undefined.
 get_c2s_sup() ->
     erlang:whereis(ejabberd_c2s_sup).
@@ -140,7 +159,7 @@ is_dbg_running() ->
         _ -> false
     end.
 
-start_new_user_tracer(Nodes) ->
+start_new_user_tracer(Nodes, Filter) ->
     is_dbg_running() andalso error(dbg_running),
     maybe_start(),
     TracerState = {fun dbg:dhandler/2, erlang:whereis(ejabberd_trace_server)},
