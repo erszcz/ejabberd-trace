@@ -133,6 +133,7 @@ new_user(Jid, Flags) ->
                                    {error, {multiple_sessions, list()}} |
                                    {error, any()}.
 user(Jid, Flags) ->
+    is_dbg_running() orelse dbg:tracer(),
     %% TODO: use ejabberd_sm to get the session list!
     UserSpec = parse_jid(Jid),
     MatchSpec = match_session_pid(UserSpec),
@@ -146,6 +147,12 @@ user(Jid, Flags) ->
             dbg:p(C2SPid, Flags);
         [_|_] = Sessions ->
             {error, {multiple_sessions, Sessions}}
+    end.
+
+is_dbg_running() ->
+    case erlang:whereis(dbg) of
+        Pid when is_pid(Pid) -> true;
+        _ -> false
     end.
 
 parse_jid(Jid) ->
