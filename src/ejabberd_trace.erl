@@ -3,9 +3,7 @@
 -behaviour(application).
 
 %% API
--export([start/0,
-         tracer/0, tracer/1,
-         new_user/1,
+-export([new_user/1, new_user/2, new_user/3,
          user/1,
          state/1]).
 
@@ -35,25 +33,6 @@
 %% API
 %%
 
-start() ->
-    application:start(sasl),
-    application:start(ejabberd_trace),
-    ejabberd_trace:tracer().
-
-tracer() ->
-    tracer([]).
-
-tracer(Nodes) ->
-    ensure_running(),
-    %% TODO: Is the tracer running? Save the current trace patterns.
-    TracerState = {fun dbg:dhandler/2, erlang:whereis(ejabberd_trace_server)},
-    dbg:tracer(process, {fun ?LIB:trace_handler/2, TracerState}),
-    [dbg:n(Node) || Node <- Nodes],
-    dbg:p(get_c2s_sup(), [c, m, sos]),
-    dbg:tpl(ejabberd_c2s, send_text, x),
-    dbg:tpl(ejabberd_c2s, send_element, x),
-    ok.
-
 %% @doc Trace a user who is to connect in near future once he/she connects.
 %% This intends to trace *all* of the communication of a specific connection.
 %%
@@ -74,13 +53,17 @@ tracer(Nodes) ->
 %% and discards all the rest.
 %% @end
 
--spec new_user(jid()) -> any().
+-spec new_user(jid()) -> any() | no_return().
 new_user(Jid) ->
     new_user(Jid, m).
 
--spec new_user(jid(), [dbg_flag()]) -> any().
+-spec new_user(jid(), [dbg_flag()]) -> any() | no_return().
 new_user(Jid, Flags) ->
-    ensure_running(),
+    new_user(Jid, Flags, []).
+
+-spec new_user(jid(), [dbg_flag()], [node()]) -> any() | no_return().
+new_user(Jid, Flags, Nodes) ->
+    start_new_user_tracer(Nodes),
     ejabberd_trace_server:trace_new_user(Jid, Flags).
 
 %% @doc Trace an already logged in user given his/her Jid.
@@ -147,14 +130,6 @@ stop(_) ->
 %% Internal functions
 %%
 
-ensure_running() ->
-    case lists:keymember(ejabberd_trace, 1, application:which_applications()) of
-        true ->
-            ok;
-        false ->
-            ejabberd_trace:start()
-    end.
-
 -spec get_c2s_sup() -> pid() | undefined.
 get_c2s_sup() ->
     erlang:whereis(ejabberd_c2s_sup).
@@ -163,6 +138,27 @@ is_dbg_running() ->
     case erlang:whereis(dbg) of
         Pid when is_pid(Pid) -> true;
         _ -> false
+    end.
+
+start_new_user_tracer(Nodes) ->
+    is_dbg_running() andalso error(dbg_running),
+    maybe_start(),
+    TracerState = {fun dbg:dhandler/2, erlang:whereis(ejabberd_trace_server)},
+    dbg:tracer(process, {fun ?LIB:trace_handler/2, TracerState}),
+    [dbg:n(Node) || Node <- Nodes],
+    dbg:p(get_c2s_sup(), [c, m, sos]),
+    dbg:tpl(ejabberd_c2s, send_text, x),
+    dbg:tpl(ejabberd_c2s, send_element, x),
+    ok.
+
+maybe_start() ->
+    Apps = application:which_applications(),
+    case lists:keymember(ejabberd_trace, 1, Apps) of
+        true ->
+            ok;
+        false ->
+            application:start(sasl),
+            application:start(ejabberd_trace)
     end.
 
 parse_jid(Jid) ->
