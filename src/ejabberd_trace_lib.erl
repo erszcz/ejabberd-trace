@@ -27,7 +27,7 @@ get_env(Application, Par, Def) ->
         XML =:= xmlel orelse XML =:= xmlelement,
         Bind =:= "bind" orelse Bind =:= <<"bind">>).
 
--spec extract_jid(ejt_xmlelement()) -> ejt_jid() | false.
+-spec extract_jid(ejabberd_trace:xmlelement()) -> ejabberd_trace:jid() | false.
 extract_jid({XML, IQ, _, [{XML2, Bind, _, [{_, _, _, [{xmlcdata, Jid}]}]}]})
   when ?IS_IQ(XML, IQ) andalso ?IS_BIND(XML2, Bind) ->
     io:format(">>>>> found Jid: ~p~n", [Jid]),

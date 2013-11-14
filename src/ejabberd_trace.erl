@@ -13,6 +13,22 @@
 -export([start/2,
          stop/1]).
 
+%% Types
+-type dbg_flag() :: s | r | m | c | p | sos | sol | sofs | sofl | all | clear.
+-export_type([dbg_flag/0]).
+
+-type sys_status() :: {status, pid(), {module, module()}, [any()]}.
+-export_type([sys_status/0]).
+
+-type jid() :: string().
+-export_type([jid/0]).
+
+-type string_type() :: list | binary.
+-export_type([string_type/0]).
+
+-type xmlelement() :: any().
+-export_type([xmlelement/0]).
+
 -include("ejabberd_trace_internal.hrl").
 
 %%
@@ -60,12 +76,12 @@ new_user(Jid) ->
     new_user(Jid, m).
 
 %% @doc Trace an already logged in user given his/her Jid.
--spec user(ejt_jid()) -> ok.
+-spec user(jid()) -> ok.
 user(Jid) ->
     user(Jid, m).
 
 %% @doc Return sys:get_status/1 result of the process corresponding to Jid.
--spec state(ejt_jid()) -> sys_status().
+-spec state(jid()) -> sys_status().
 state(Jid) ->
     UserSpec = parse_jid(Jid),
     MatchSpec = match_session_pid(UserSpec),
@@ -107,15 +123,15 @@ ensure_running() ->
 get_c2s_sup() ->
     erlang:whereis(ejabberd_c2s_sup).
 
--spec new_user(ejt_jid(), [dbg_flag()]) -> any().
+-spec new_user(jid(), [dbg_flag()]) -> any().
 new_user(Jid, Flags) ->
     ensure_running(),
     ejabberd_trace_server:trace_new_user(Jid, Flags).
 
--spec user(ejt_jid(), [dbg_flag()]) -> {ok, any()} |
-                                       {error, not_found} |
-                                       {error, {multiple_sessions, list()}} |
-                                       {error, any()}.
+-spec user(jid(), [dbg_flag()]) -> {ok, any()} |
+                                   {error, not_found} |
+                                   {error, {multiple_sessions, list()}} |
+                                   {error, any()}.
 user(Jid, Flags) ->
     %% TODO: use ejabberd_sm to get the session list!
     UserSpec = parse_jid(Jid),
@@ -137,8 +153,8 @@ parse_jid(Jid) ->
 
 -spec parse_jid(StringType, Jid) -> {User, Domain, Resource} |
                                     {User, Domain} when
-      StringType :: ejt_string_type(),
-      Jid :: ejt_jid(),
+      StringType :: string_type(),
+      Jid :: jid(),
       User :: list() | binary(),
       Domain :: list() | binary(),
       Resource :: list() | binary().

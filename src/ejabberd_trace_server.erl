@@ -32,7 +32,8 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
--spec trace_new_user(ejt_jid(), [dbg_flag()]) -> any().
+-spec trace_new_user(ejabberd_trace:jid(),
+                     [ejabberd_trace:dbg_flag()]) -> any().
 trace_new_user(Jid, Flags) ->
     gen_server:cast(?SERVER, {trace_new_user, Jid, Flags}).
 
