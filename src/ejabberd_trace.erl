@@ -162,8 +162,13 @@ is_dbg_running() ->
 start_new_user_tracer(Nodes, Filter) ->
     is_dbg_running() andalso error(dbg_running),
     maybe_start(),
-    TracerState = {fun dbg:dhandler/2, erlang:whereis(ejabberd_trace_server)},
-    dbg:tracer(process, {fun ?LIB:trace_handler/2, TracerState}),
+    TraceServer = erlang:whereis(ejabberd_trace_server),
+    TraceFilter = case Filter of
+                      dbg -> fun dbg:dhandler/2;
+                      _ -> ?LIB:Filter()
+                  end,
+    dbg:tracer(process, {fun ?LIB:trace_handler/2,
+                         {TraceFilter, TraceServer}}),
     [dbg:n(Node) || Node <- Nodes],
     dbg:p(get_c2s_sup(), [c, m, sos]),
     dbg:tpl(ejabberd_c2s, send_text, x),

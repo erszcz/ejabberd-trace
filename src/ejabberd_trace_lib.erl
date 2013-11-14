@@ -6,6 +6,9 @@
 %% dbg handler
 -export([trace_handler/2]).
 
+%% trace filters
+-export([raw_traces/0]).
+
 -include("ejabberd_trace_internal.hrl").
 
 %% @doc Return `Application' environment variable `Par'.
@@ -115,6 +118,18 @@ maybe_disable_cache(TraceServer) ->
             ets:delete_all_objects(?TRACE_CACHE);
         _ ->
             ok
+    end.
+
+%%
+%% Filters
+%%
+
+raw_traces() ->
+    fun(end_of_trace, Out) ->
+            Out;
+       (Trace, Out) ->
+            io:format("raw trace: ~p~n", [Trace]),
+            Out
     end.
 
 %%
