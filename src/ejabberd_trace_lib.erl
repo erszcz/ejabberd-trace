@@ -7,7 +7,9 @@
 -export([trace_handler/2]).
 
 %% trace filters
--export([raw_traces/0]).
+-export([raw_traces/0,
+         rx/0,
+         tx/0]).
 
 -include("ejabberd_trace_internal.hrl").
 
@@ -129,6 +131,36 @@ raw_traces() ->
             Out;
        (Trace, Out) ->
             io:format("raw trace: ~p~n", [Trace]),
+            Out
+    end.
+
+rx() ->
+    rx(fun dbg:dhandler/2).
+
+rx(Handler) ->
+    fun(end_of_trace, Out) ->
+            Out;
+       ({trace, _Pid, 'receive',
+         {'$gen_event', {xmlstreamstart, _, _}}} = Trace, Out) ->
+            Handler(Trace, Out);
+       ({trace, _Pid, 'receive',
+         {'$gen_event', {ElemOrEnd, _}}} = Trace, Out)
+         when ElemOrEnd == xmlstreamelement; ElemOrEnd == xmlstreamend ->
+            Handler(Trace, Out);
+       (_Trace, Out) ->
+            Out
+    end.
+
+tx() ->
+    tx(fun dbg:dhandler/2).
+
+tx(Handler) ->
+    fun(end_of_trace, Out) ->
+            Out;
+       ({trace, _Pid, call,
+         {ejabberd_c2s, send_text, [_State, _Msg]}} = Trace, Out) ->
+            Handler(Trace, Out);
+       (_Trace, Out) ->
             Out
     end.
 
