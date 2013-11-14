@@ -72,15 +72,51 @@ tracer(Nodes) ->
 %% This function buffers all debug messages up to the point of receiving
 %% that stanza; then it forwards all the buffered messages for the traced user
 %% and discards all the rest.
+%% @end
+
+-spec new_user(jid()) -> any().
 new_user(Jid) ->
     new_user(Jid, m).
 
+-spec new_user(jid(), [dbg_flag()]) -> any().
+new_user(Jid, Flags) ->
+    ensure_running(),
+    ejabberd_trace_server:trace_new_user(Jid, Flags).
+
 %% @doc Trace an already logged in user given his/her Jid.
--spec user(jid()) -> ok.
+%% @end
+
+-spec user(jid()) -> {ok, any()} |
+                     {error, not_found} |
+                     {error, {multiple_sessions, list()}} |
+                     {error, any()}.
 user(Jid) ->
     user(Jid, m).
 
+-spec user(jid(), [dbg_flag()]) -> {ok, any()} |
+                                   {error, not_found} |
+                                   {error, {multiple_sessions, list()}} |
+                                   {error, any()}.
+user(Jid, Flags) ->
+    is_dbg_running() orelse dbg:tracer(),
+    %% TODO: use ejabberd_sm to get the session list!
+    UserSpec = parse_jid(Jid),
+    MatchSpec = match_session_pid(UserSpec),
+    error_logger:info_msg("Session match spec: ~p~n", [MatchSpec]),
+    case ets:select(session, MatchSpec) of
+        [] ->
+            {error, not_found};
+        [{_, C2SPid}] ->
+            dbg:p(C2SPid, Flags);
+        [C2SPid] ->
+            dbg:p(C2SPid, Flags);
+        [_|_] = Sessions ->
+            {error, {multiple_sessions, Sessions}}
+    end.
+
 %% @doc Return sys:get_status/1 result of the process corresponding to Jid.
+%% @end
+
 -spec state(jid()) -> sys_status().
 state(Jid) ->
     UserSpec = parse_jid(Jid),
@@ -122,32 +158,6 @@ ensure_running() ->
 -spec get_c2s_sup() -> pid() | undefined.
 get_c2s_sup() ->
     erlang:whereis(ejabberd_c2s_sup).
-
--spec new_user(jid(), [dbg_flag()]) -> any().
-new_user(Jid, Flags) ->
-    ensure_running(),
-    ejabberd_trace_server:trace_new_user(Jid, Flags).
-
--spec user(jid(), [dbg_flag()]) -> {ok, any()} |
-                                   {error, not_found} |
-                                   {error, {multiple_sessions, list()}} |
-                                   {error, any()}.
-user(Jid, Flags) ->
-    is_dbg_running() orelse dbg:tracer(),
-    %% TODO: use ejabberd_sm to get the session list!
-    UserSpec = parse_jid(Jid),
-    MatchSpec = match_session_pid(UserSpec),
-    error_logger:info_msg("Session match spec: ~p~n", [MatchSpec]),
-    case ets:select(session, MatchSpec) of
-        [] ->
-            {error, not_found};
-        [{_, C2SPid}] ->
-            dbg:p(C2SPid, Flags);
-        [C2SPid] ->
-            dbg:p(C2SPid, Flags);
-        [_|_] = Sessions ->
-            {error, {multiple_sessions, Sessions}}
-    end.
 
 is_dbg_running() ->
     case erlang:whereis(dbg) of
