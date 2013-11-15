@@ -35,12 +35,16 @@ and other parts of the system (including TCP connection).
 
     > ejabberd_trace:new_user("asd@localhost").
 
-Keep in mind this might be *heavy* on the system - until it's known which of
-the connected processes is the one you want to trace *all newly connecting
-c2s processes are traced and the traces cached*.
+Keep in mind **this might be heavy** on the system - until it's known which
+of the connected processes is the one you want to trace **all newly connecting
+c2s processes are traced and the traces cached**.
 Once it's known (by inspecting the XMPP stream) which process is the one
 to be traced its trace cache is flushed to the trace handler; the rest of
 the trace cache is discarded.
+
+### Display c2s process state by JID
+
+    > ejabberd_trace:state("asd@localhost").
 
 ## Filters
 
@@ -52,19 +56,28 @@ The available filters are:
 - `tx` - messages sent on socket as formatted by dbg
 - `rx` - messages received on socket as formatted by dbg
 - `routed_out` - messages routed to the c2s process from other parts
--                of the server
+                 of the server
 - `routed_in` - messages routed by the c2s process to other part of the
--               server
+                server
 
 ## ToDo
 
-- [ ] implement `routed_out` filter
+- [ ] Implement `routed_out` filter.
 
-- [ ] implement `routed_in` filter
+- [ ] Implement `routed_in` filter.
 
-- [ ] make filter and formatter choices independent;
-      filters should only filter traces and pass them to a formatter
+- [ ] Make filter and formatter choices independent.
+      Filter should only filter traces and pass them to a formatter.
 
-- [ ] make filters composable;
-      it should be possible to display `routed_in` and `tx` traces
-      simultaneously
+- [ ] Make filters composable.
+      It should be possible to display `routed_in` and `tx` traces
+      simultaneously.
+
+- [ ] Sort out logging.
+      There are debug messages logged unconditionally right now, e.g.:
+
+        >>>>> caught send_element
+        >>>>> found no Jid
+
+      It would be nice to keep them, but not display all the time.
+      It should also be possible to print the traces to a file.
