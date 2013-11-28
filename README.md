@@ -62,7 +62,7 @@ The available filters are:
 
 ## ToDo
 
-- [ ] Implement `routed_out` filter.
+- [x] Implement `routed_out` filter.
 
 - [x] Implement `routed_in` filter.
 

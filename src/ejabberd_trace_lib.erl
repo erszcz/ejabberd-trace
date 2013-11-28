@@ -10,6 +10,7 @@
 -export([raw_traces/0,
          rx/0,
          tx/0,
+         routed_out/0,
          routed_in/0]).
 
 -include("ejabberd_trace_internal.hrl").
@@ -160,6 +161,19 @@ tx(Handler) ->
             Out;
        ({trace, _Pid, call,
          {ejabberd_c2s, send_text, [_State, _Msg]}} = Trace, Out) ->
+            Handler(Trace, Out);
+       (_Trace, Out) ->
+            Out
+    end.
+
+routed_out() ->
+    routed_out(fun dbg:dhandler/2).
+
+routed_out(Handler) ->
+    fun(end_of_trace, Out) ->
+            Out;
+       ({trace, _Pid, send,
+         {route, _From, _To, _Packet}, _ToPid} = Trace, Out) ->
             Handler(Trace, Out);
        (_Trace, Out) ->
             Out
