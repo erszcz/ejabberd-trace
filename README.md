@@ -64,7 +64,7 @@ The available filters are:
 
 - [ ] Implement `routed_out` filter.
 
-- [ ] Implement `routed_in` filter.
+- [x] Implement `routed_in` filter.
 
 - [ ] Make filter and formatter choices independent.
       Filter should only filter traces and pass them to a formatter.
