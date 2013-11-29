@@ -28,9 +28,9 @@
 -export_type([filter/0]).
 
 -spec apply(filter(), trace()) -> boolean().
-apply({any, [Filters]}, Trace) ->
+apply({any, Filters}, Trace) ->
     lists:any(fun (F) -> ?MODULE:apply(F, Trace) end, Filters);
-apply({all, [Filters]}, Trace) ->
+apply({all, Filters}, Trace) ->
     lists:all(fun (F) -> ?MODULE:apply(F, Trace) end, Filters);
 apply({filter, Fun}, Trace) ->
     Fun(Trace).
