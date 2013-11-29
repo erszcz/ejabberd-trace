@@ -6,13 +6,6 @@
 %% dbg handler
 -export([trace_handler/2]).
 
-%% trace filters
--export([raw_traces/0,
-         rx/0,
-         tx/0,
-         routed_out/0,
-         routed_in/0]).
-
 -include("ejabberd_trace_internal.hrl").
 
 %% @doc Return `Application' environment variable `Par'.
@@ -122,73 +115,6 @@ maybe_disable_cache(TraceServer) ->
             ets:delete_all_objects(?TRACE_CACHE);
         _ ->
             ok
-    end.
-
-%%
-%% Filters
-%%
-
-raw_traces() ->
-    fun(end_of_trace, Out) ->
-            Out;
-       (Trace, Out) ->
-            io:format("raw trace: ~p~n", [Trace]),
-            Out
-    end.
-
-rx() ->
-    rx(fun dbg:dhandler/2).
-
-rx(Handler) ->
-    fun(end_of_trace, Out) ->
-            Out;
-       ({trace, _Pid, 'receive',
-         {'$gen_event', {xmlstreamstart, _, _}}} = Trace, Out) ->
-            Handler(Trace, Out);
-       ({trace, _Pid, 'receive',
-         {'$gen_event', {ElemOrEnd, _}}} = Trace, Out)
-         when ElemOrEnd == xmlstreamelement; ElemOrEnd == xmlstreamend ->
-            Handler(Trace, Out);
-       (_Trace, Out) ->
-            Out
-    end.
-
-tx() ->
-    tx(fun dbg:dhandler/2).
-
-tx(Handler) ->
-    fun(end_of_trace, Out) ->
-            Out;
-       ({trace, _Pid, call,
-         {ejabberd_c2s, send_text, [_State, _Msg]}} = Trace, Out) ->
-            Handler(Trace, Out);
-       (_Trace, Out) ->
-            Out
-    end.
-
-routed_out() ->
-    routed_out(fun dbg:dhandler/2).
-
-routed_out(Handler) ->
-    fun(end_of_trace, Out) ->
-            Out;
-       ({trace, _Pid, send,
-         {route, _From, _To, _Packet}, _ToPid} = Trace, Out) ->
-            Handler(Trace, Out);
-       (_Trace, Out) ->
-            Out
-    end.
-
-routed_in() ->
-    routed_in(fun dbg:dhandler/2).
-
-routed_in(Handler) ->
-    fun(end_of_trace, Out) ->
-            Out;
-       ({trace, _Pid, 'receive', {route, _From, _To, _Packet}} = Trace, Out) ->
-            Handler(Trace, Out);
-       (_Trace, Out) ->
-            Out
     end.
 
 %%
