@@ -107,11 +107,29 @@ get_filter_test_() ->
 
 rx_test_() ->
     [?_eq(true, rx(rx_trace())),
-     ?_eq(false, rx(tx_trace()))].
+     ?_eq(false, rx(tx_trace())),
+     ?_eq(false, rx(routed_in_trace())),
+     ?_eq(false, rx(routed_out_trace()))].
 
 tx_test_() ->
     [?_eq(true, tx(tx_trace())),
-     ?_eq(false, tx(rx_trace()))].
+     ?_eq(false, tx(rx_trace())),
+     ?_eq(false, tx(routed_in_trace())),
+     ?_eq(false, tx(routed_out_trace()))].
+
+routed_in_test_() ->
+    RI = fun routed_in/1,
+    [?_eq(true, RI(routed_in_trace())),
+     ?_eq(false, RI(routed_out_trace())),
+     ?_eq(false, RI(rx_trace())),
+     ?_eq(false, RI(tx_trace()))].
+
+routed_out_test_() ->
+    RO = fun routed_out/1,
+    [?_eq(true, RO(routed_out_trace())),
+     ?_eq(false, RO(routed_in_trace())),
+     ?_eq(false, RO(rx_trace())),
+     ?_eq(false, RO(tx_trace()))].
 
 rx_trace() ->
     {trace,'some_pid','receive',
@@ -147,5 +165,45 @@ tx_trace() ->
         {{127,0,0,1},59226},
         [],undefined,false,0,0,[],0,100,1},
        <<"<stream:features><mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'><mechanism>DIGEST-MD5</mechanism><mechanism>PLAIN</mechanism><mechanism>SCRAM-SHA-1</mechanism></mechanisms><c xmlns='http://jabber.org/protocol/caps' hash='sha-1' node='http://www.process-one.net/en/ejabberd/' ver='mfN6SdQ3DGO7/QUHHftElVDFZ7k='/><register xmlns='http://jabber.org/features/iq-register'/><sm xmlns='urn:xmpp:sm:3'/></stream:features>">>]}}.
+
+routed_in_trace() ->
+    {trace,'some_pid','receive',
+     {route,
+      {jid,"asd","localhost",[],"asd","localhost",[]},
+      {jid,"asd","localhost","x3","asd","localhost","x3"},
+      {xmlelement,"iq",
+       [{"id","ac6aa"},{"type","result"}],
+       [{xmlelement,"query",
+         [{"xmlns","jabber:iq:roster"}],
+         [{xmlelement,"item",
+           [{"subscription","both"},
+            {"name","qwe@localhost"},
+            {"jid","qwe@localhost"}],
+           []},
+          {xmlelement,"item",
+           [{"subscription","none"},
+            {"name","self"},
+            {"jid","asd@localhost"}],
+           []}]}]}}}.
+
+routed_out_trace() ->
+    {trace,'some_pid',send,
+     {route,
+      {jid,"asd","localhost","x3","asd","localhost","x3"},
+      {jid,"qwe","localhost","x3","qwe","localhost","x3"},
+      {xmlelement,"message",
+       [{"xml:lang","en"},
+        {"type","chat"},
+        {"to","qwe@localhost/x3"},
+        {"id","ac99a"}],
+       [{xmlcdata,<<"\n">>},
+        {xmlelement,"body",[],[{xmlcdata,<<"zxc123">>}]},
+        {xmlcdata,<<"\n">>},
+        {xmlelement,"active",
+         [{"xmlns",
+           "http://jabber.org/protocol/chatstates"}],
+         []},
+        {xmlcdata,<<"\n">>}]}},
+     'other_pid'}.
 
 -endif.
