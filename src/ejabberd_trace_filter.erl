@@ -95,6 +95,7 @@ routed_in(_) -> false.
 %%
 
 -ifdef(TEST).
+-compile([export_all]).
 -include_lib("eunit/include/eunit.hrl").
 -define(_eq(E, I), ?_assertEqual(E, I)).
 
@@ -130,6 +131,25 @@ routed_out_test_() ->
      ?_eq(false, RO(routed_in_trace())),
      ?_eq(false, RO(rx_trace())),
      ?_eq(false, RO(tx_trace()))].
+
+any_test_() ->
+    [?_eq({any, [get_filter(rx), get_filter(tx)]}, any([rx, tx]))].
+
+apply_test_() ->
+    Ap = fun ?MODULE:apply/2,
+    [?_eq(true, Ap(get_filter(rx), rx_trace())),
+     ?_eq(false, Ap(get_filter(rx), tx_trace())),
+     ?_eq(true, Ap(any([rx, tx]), rx_trace())),
+     ?_eq(false, Ap(all([rx, tx]), rx_trace()))].
+
+apply_any_test_() ->
+    F = fun(Trace) ->
+                ?MODULE:apply(any([rx, routed_out]), Trace)
+        end,
+    [?_eq(true, F(rx_trace())),
+     ?_eq(true, F(routed_out_trace())),
+     ?_eq(false, F(tx_trace())),
+     ?_eq(false, F(routed_in_trace()))].
 
 rx_trace() ->
     {trace,'some_pid','receive',
