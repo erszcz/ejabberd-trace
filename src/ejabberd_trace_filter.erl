@@ -105,4 +105,47 @@ get_filter_test_() ->
      ?_eq({filter, fun ?MODULE:rx/1}, GT({filter, fun ?MODULE:rx/1})),
      ?_assertError(badarg, GT({some, shit}))].
 
+rx_test_() ->
+    [?_eq(true, rx(rx_trace())),
+     ?_eq(false, rx(tx_trace()))].
+
+tx_test_() ->
+    [?_eq(true, tx(tx_trace())),
+     ?_eq(false, tx(rx_trace()))].
+
+rx_trace() ->
+    {trace,'some_pid','receive',
+     {'$gen_event',
+      {xmlstreamelement,
+       {xmlelement,"iq",
+        [{"xmlns","jabber:client"},
+         {"type","get"},
+         {"to","asd@localhost/x3"},
+         {"id","ac6fa"}],
+        [{xmlcdata,<<"\n">>},
+         {xmlelement,"query",
+          [{"xmlns","jabber:iq:version"}],
+          []},
+         {xmlcdata,<<"\n">>}]}}}}.
+
+tx_trace() ->
+    {trace,'some_pid',call,
+     {ejabberd_c2s,send_text,
+      [{state,
+        {socket_state,gen_tcp,'some_port','some_pid'},
+        ejabberd_socket,'some_ref',false,"3635346036",
+        undefined,c2s,c2s_shaper,false,false,false,false,
+        [verify_none],
+        false,undefined,[],"localhost",[],undefined,
+        {0,nil},
+        {0,nil},
+        {0,nil},
+        {0,nil},
+        undefined,undefined,undefined,false,
+        {userlist,none,[],false},
+        unknown,unknown,
+        {{127,0,0,1},59226},
+        [],undefined,false,0,0,[],0,100,1},
+       <<"<stream:features><mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'><mechanism>DIGEST-MD5</mechanism><mechanism>PLAIN</mechanism><mechanism>SCRAM-SHA-1</mechanism></mechanisms><c xmlns='http://jabber.org/protocol/caps' hash='sha-1' node='http://www.process-one.net/en/ejabberd/' ver='mfN6SdQ3DGO7/QUHHftElVDFZ7k='/><register xmlns='http://jabber.org/features/iq-register'/><sm xmlns='urn:xmpp:sm:3'/></stream:features>">>]}}.
+
 -endif.
