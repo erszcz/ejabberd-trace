@@ -7,7 +7,8 @@
          tx_text/1,
          tx_element/1,
          routed_out/1,
-         routed_in/1]).
+         routed_in/1,
+         stream/0]).
 
 %% Combinators
 -export([any/1,
@@ -62,6 +63,9 @@ is_filter({any, _}) -> true;
 is_filter({all, _}) -> true;
 is_filter({filter, _}) -> true;
 is_filter(_) -> false.
+
+stream() ->
+    any([rx, tx]).
 
 %%
 %% Filters
