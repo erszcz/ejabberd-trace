@@ -108,6 +108,6 @@ handle_get_action(Pid, Default) ->
 %% What does this handler do?
 %% It only adds one more Jid/Flags to the to-be-traced set.
 handle_trace_new_user(Jid, Flags, #state{} = S) ->
-    io:format(">>>>> handle trace new user: ~p~n", [Jid]),
+    ?DEBUG(">>>>> handle trace new user: ~p~n", [Jid]),
     ets:insert(?NEW_TRACES, {Jid, Flags}),
     S#state{cache = true}.

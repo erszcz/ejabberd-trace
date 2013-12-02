@@ -30,16 +30,16 @@ get_env(Application, Par, Def) ->
 -spec extract_jid(ejabberd_trace:xmlelement()) -> ejabberd_trace:jid() | false.
 extract_jid({XML, IQ, _, [{XML2, Bind, _, [{_, _, _, [{xmlcdata, Jid}]}]}]})
   when ?IS_IQ(XML, IQ) andalso ?IS_BIND(XML2, Bind) ->
-    io:format(">>>>> found Jid: ~p~n", [Jid]),
+    ?DEBUG(">>>>> found Jid: ~p~n", [Jid]),
     Jid;
 extract_jid(_) ->
-    io:format(">>>>> found no Jid~n", []),
+    ?DEBUG(">>>>> found no Jid~n", []),
     false.
 
 trace_handler({trace, Pid, call,
                {ejabberd_c2s, send_element, [_, BindResult]}} = T,
               #tstate{} = TState) ->
-    io:format(">>>>> caught send_element~n", []),
+    ?DEBUG(">>>>> caught send_element~n", []),
     handle_trace(T, Pid, TState),
     case extract_jid(BindResult) of
         false ->
@@ -91,15 +91,15 @@ do_cache(Pid, Trace) ->
     end.
 
 do_trace_user(Jid, Pid, #tstate{server = TraceServer} = TState) ->
-    io:format(">>>>> fake trace: ~p ~p~n", [Jid, Pid]),
+    ?DEBUG(">>>>> fake trace: ~p ~p~n", [Jid, Pid]),
     %% TODO: this Jid comes from unpacking an XML stanza
     %%       so may require unescaping
     case ets:lookup(?NEW_TRACES, Jid) of
         [] ->
-            io:format(">>>>> fake trace: not tracing~n", []),
+            ?DEBUG(">>>>> fake trace: not tracing~n", []),
             ok;
         [{Jid, _Flags}] ->
-            io:format(">>>>> fake trace: tracing ~n", []),
+            ?DEBUG(">>>>> fake trace: tracing ~n", []),
             ets:delete(?NEW_TRACES, Jid),
             flush_cache(Pid, TState),
             maybe_disable_cache(TraceServer),
@@ -107,13 +107,13 @@ do_trace_user(Jid, Pid, #tstate{server = TraceServer} = TState) ->
     end.
 
 flush_cache(Pid, #tstate{} = TState) ->
-    io:format(">>>>> flush cache: ~p: ", [Pid]),
+    ?DEBUG(">>>>> flush cache: ~p: ", [Pid]),
     case ets:lookup(?TRACE_CACHE, Pid) of
         [] ->
-            io:format("no traces for ~p~n", [Pid]),
+            ?DEBUG("no traces for ~p~n", [Pid]),
             ok;
         [{Pid, Traces}] ->
-            io:format("~p traces~n", [length(Traces)]),
+            ?DEBUG("~p traces~n", [length(Traces)]),
             [filter_and_format(Trace, TState)
              || Trace <- lists:reverse(Traces)],
             ets:delete(?TRACE_CACHE, Pid)

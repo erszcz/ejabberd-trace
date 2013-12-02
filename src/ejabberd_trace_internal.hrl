@@ -6,3 +6,9 @@
 -record(tstate, {filter,
                  format,
                  server}).
+
+-ifdef(debug).
+-define(DEBUG(Format, Args), io:format(Format, Args)).
+-else.
+-define(DEBUG(Format, Args), ok).
+-endif.
