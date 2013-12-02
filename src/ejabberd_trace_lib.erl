@@ -38,30 +38,40 @@ extract_jid(_) ->
 
 trace_handler({trace, Pid, call,
                {ejabberd_c2s, send_element, [_, BindResult]}} = T,
-              {Handler, TraceServer} = TState) ->
+              #tstate{} = TState) ->
     io:format(">>>>> caught send_element~n", []),
     handle_trace(T, Pid, TState),
     case extract_jid(BindResult) of
         false ->
             ok;
         Jid ->
-            do_trace_user(Jid, Pid, Handler, TraceServer)
+            do_trace_user(Jid, Pid, TState)
     end,
     TState;
 trace_handler(Trace, TState) ->
     handle_trace(Trace, element(2, Trace), TState),
     TState.
 
-handle_trace(Trace, Pid, {Handler, TraceServer}) ->
+handle_trace(Trace, Pid, #tstate{server = TraceServer} = TState) ->
     Action = ejabberd_trace_server:get_action(TraceServer, Pid),
-    do_handle_trace(Action, Trace, Handler).
+    do_handle_trace(Action, Trace, TState).
 
-do_handle_trace(drop, _Trace, _Handler) ->
+do_handle_trace(drop, _Trace, _TState) ->
     ok;
-do_handle_trace(cache, Trace, _Handler) ->
+do_handle_trace(cache, Trace, _TState) ->
     cache_trace(Trace);
-do_handle_trace(trace, Trace, Handler) ->
-    Handler(Trace, user).
+do_handle_trace(trace, Trace, TState) ->
+    filter_and_format(Trace, TState).
+
+filter_and_format(Trace, #tstate{filter = Filter,
+                                 format = Format} = TState) ->
+    case ejabberd_trace_filter:apply(Filter, Trace) of
+        true ->
+            Format(Trace, []),
+            TState;
+        false ->
+            TState
+    end.
 
 %% TODO: this is lame - message send/recv traces are stored twice
 %% so will be duplicated when printing. Store everything once (no key) and
@@ -80,7 +90,7 @@ do_cache(Pid, Trace) ->
             ets:insert(?TRACE_CACHE, {Pid, [Trace | Traces]})
     end.
 
-do_trace_user(Jid, Pid, Handler, TraceServer) ->
+do_trace_user(Jid, Pid, #tstate{server = TraceServer} = TState) ->
     io:format(">>>>> fake trace: ~p ~p~n", [Jid, Pid]),
     %% TODO: this Jid comes from unpacking an XML stanza
     %%       so may require unescaping
@@ -91,12 +101,12 @@ do_trace_user(Jid, Pid, Handler, TraceServer) ->
         [{Jid, _Flags}] ->
             io:format(">>>>> fake trace: tracing ~n", []),
             ets:delete(?NEW_TRACES, Jid),
-            flush_cache(Pid, Handler),
+            flush_cache(Pid, TState),
             maybe_disable_cache(TraceServer),
             TraceServer ! {traced_new_user, Jid, Pid}
     end.
 
-flush_cache(Pid, Handler) ->
+flush_cache(Pid, #tstate{} = TState) ->
     io:format(">>>>> flush cache: ~p: ", [Pid]),
     case ets:lookup(?TRACE_CACHE, Pid) of
         [] ->
@@ -104,7 +114,8 @@ flush_cache(Pid, Handler) ->
             ok;
         [{Pid, Traces}] ->
             io:format("~p traces~n", [length(Traces)]),
-            [Handler(Trace, user) || Trace <- lists:reverse(Traces)],
+            [filter_and_format(Trace, TState)
+             || Trace <- lists:reverse(Traces)],
             ets:delete(?TRACE_CACHE, Pid)
     end.
 

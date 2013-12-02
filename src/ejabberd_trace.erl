@@ -60,16 +60,10 @@
 new_user(Jid) ->
     new_user(Jid, m).
 
--spec new_user(jid(), filter() | [dbg_flag()]) -> any() | no_return().
-new_user(Jid, FilterOrFlags) ->
-    case is_filter(FilterOrFlags) of
-        true ->
-            Filter = FilterOrFlags,
-            new_user(Jid, m, [], Filter);
-        false ->
-            Flags = FilterOrFlags,
-            new_user(Jid, Flags, [], dbg)
-    end.
+-spec new_user(jid(), filter()) -> any() | no_return().
+new_user(Jid, Filter) ->
+    %% TODO: prepare filter
+    new_user(Jid, m, [], Filter).
 
 -spec new_user(jid(), [dbg_flag()], [node()], filter()) -> any() | no_return().
 new_user(Jid, Flags, Nodes, Filter) ->
@@ -140,15 +134,6 @@ stop(_) ->
 %% Internal functions
 %%
 
--spec is_filter(filter()) -> boolean().
-is_filter(raw_traces) -> true;
-is_filter(dbg) -> true;
-is_filter(tx) -> true;
-is_filter(rx) -> true;
-is_filter(routed_out) -> true;
-is_filter(routed_in) -> true;
-is_filter(_) -> false.
-
 -spec get_c2s_sup() -> pid() | undefined.
 get_c2s_sup() ->
     erlang:whereis(ejabberd_c2s_sup).
@@ -163,12 +148,12 @@ start_new_user_tracer(Nodes, Filter) ->
     is_dbg_running() andalso error(dbg_running),
     maybe_start(),
     TraceServer = erlang:whereis(ejabberd_trace_server),
-    TraceFilter = case Filter of
-                      dbg -> fun dbg:dhandler/2;
-                      _ -> ?LIB:Filter()
-                  end,
     dbg:tracer(process, {fun ?LIB:trace_handler/2,
-                         {TraceFilter, TraceServer}}),
+                         #tstate{filter = Filter,
+                                 format = fun (Trace, _Opts) ->
+                                                  dbg:dhandler(Trace, user)
+                                          end,
+                                 server = TraceServer}}),
     [dbg:n(Node) || Node <- Nodes],
     dbg:p(get_c2s_sup(), [c, m, sos]),
     dbg:tpl(ejabberd_c2s, send_text, x),
