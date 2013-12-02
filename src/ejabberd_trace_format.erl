@@ -1,6 +1,10 @@
 -module(ejabberd_trace_format).
 
--export([stream/2]).
+-export([raw/2,
+         stream/2]).
+
+raw(Trace, _Opts) ->
+    io:format("raw: ~p~n", [Trace]).
 
 stream({trace, _Pid, 'receive',
         {'$gen_event', {xmlstreamstart, _, _} = StreamStart}}, _Opts) ->
