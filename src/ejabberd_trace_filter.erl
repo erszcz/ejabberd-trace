@@ -4,6 +4,7 @@
 -export([raw_traces/1,
          rx/1,
          tx/1,
+         tx_element/1,
          routed_out/1,
          routed_in/1]).
 
@@ -80,6 +81,11 @@ tx(end_of_trace) -> true;
 tx({trace, _Pid, call, {ejabberd_c2s, send_text, [_State, _Msg]}}) -> true;
 tx(_) -> false.
 
+-spec tx_element/1 :: ?FILTER_FUN_DEF.
+tx_element(end_of_trace) -> true;
+tx_element({trace, _Pid, call, {ejabberd_c2s, send_element, [_State, _Msg]}}) -> true;
+tx_element(_) -> false.
+
 -spec routed_out/1 :: ?FILTER_FUN_DEF.
 routed_out(end_of_trace) -> true;
 routed_out({trace, _Pid, send, {route, _From, _To, _Packet}, _ToPid}) -> true;
@@ -117,6 +123,13 @@ tx_test_() ->
      ?_eq(false, tx(rx_trace())),
      ?_eq(false, tx(routed_in_trace())),
      ?_eq(false, tx(routed_out_trace()))].
+
+tx_element_test_() ->
+    [?_eq(true, tx_element(tx_element_trace())),
+     ?_eq(false, tx_element(tx_trace())),
+     ?_eq(false, tx_element(rx_trace())),
+     ?_eq(false, tx_element(routed_in_trace())),
+     ?_eq(false, tx_element(routed_out_trace()))].
 
 routed_in_test_() ->
     RI = fun routed_in/1,
@@ -185,6 +198,43 @@ tx_trace() ->
         {{127,0,0,1},59226},
         [],undefined,false,0,0,[],0,100,1},
        <<"<stream:features><mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'><mechanism>DIGEST-MD5</mechanism><mechanism>PLAIN</mechanism><mechanism>SCRAM-SHA-1</mechanism></mechanisms><c xmlns='http://jabber.org/protocol/caps' hash='sha-1' node='http://www.process-one.net/en/ejabberd/' ver='mfN6SdQ3DGO7/QUHHftElVDFZ7k='/><register xmlns='http://jabber.org/features/iq-register'/><sm xmlns='urn:xmpp:sm:3'/></stream:features>">>]}}.
+
+tx_element_trace() ->
+    {trace,'some_pid',call,
+     {ejabberd_c2s,send_element,
+      [{state,
+        {socket_state,gen_tcp,'some_port','some_pid'},
+        ejabberd_socket,'some_ref',false,"3618468885",
+        {sasl_state,"jabber","localhost",[],
+         'some_fun',
+         'some_fun',
+         'some_fun',undefined,undefined},
+        c2s,c2s_shaper,false,false,false,false,
+        [verify_none],
+        true,
+        {jid,"alice","localhost","escalus-default-resource",
+         "alice","localhost","escalus-default-resource"},
+        "alice","localhost","escalus-default-resource",
+        {{1385,996502,24109},'some_pid'},
+        {1,{{"alice","localhost",[]},nil,nil}},
+        {1,{{"alice","localhost",[]},nil,nil}},
+        {1,{{"alice","localhost",[]},nil,nil}},
+        {0,nil},
+        {xmlelement,"presence",[{"xml:lang","en"}],[]},
+        undefined,
+        {{2013,12,2},{15,1,42}},
+        false,
+        {userlist,none,[],false},
+        c2s,ejabberd_auth_internal,
+        {{127,0,0,1},64236},
+        [],"en",true,1,0,
+        [],
+        3,100,never},
+       {xmlelement,"presence",
+        [{"from","alice@localhost/escalus-default-resource"},
+         {"to","alice@localhost/escalus-default-resource"},
+         {"xml:lang","en"}],
+        []}]}}.
 
 routed_in_trace() ->
     {trace,'some_pid','receive',
