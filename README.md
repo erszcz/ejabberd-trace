@@ -6,6 +6,9 @@ to ejabberd XMPP server.
 In the future it might be expanded but just as well it might be abandoned
 due to proving to be useless.
 
+The project is in rapid development - you have been warned.
+(Read: I don't care for API backwards compatibility for now).
+
 ## Getting started
 
 ### Tracing a connected user by JID
@@ -45,6 +48,15 @@ the trace cache is discarded.
 ### Display c2s process state by JID
 
     > ejabberd_trace:state("asd@localhost").
+
+### Display incoming/outgoing XMPP streams for a given user
+
+This gives a complete pretty-printed log of the whole client
+to server connection for a single full JID:
+
+    > ejabberd_trace:new_user("alice@localhost/escalus-default-resource",
+                              ejabberd_trace_filter:stream(),
+                              fun ejabberd_trace_format:stream/2).
 
 ## Filters
 
