@@ -3,7 +3,7 @@
 -behaviour(application).
 
 %% API
--export([new_user/1, new_user/2, new_user/4,
+-export([new_user/1, new_user/2, new_user/3, new_user/5,
          user/1,
          state/1]).
 
@@ -29,6 +29,8 @@
 
 -type filter() :: raw_traces | dbg | tx | rx | routed_out | routed_in.
 -export_type([filter/0]).
+
+-type formatter() :: fun().
 
 -include("ejabberd_trace_internal.hrl").
 
@@ -63,11 +65,20 @@ new_user(Jid) ->
 -spec new_user(jid(), filter()) -> any() | no_return().
 new_user(Jid, Filter) ->
     %% TODO: prepare filter
-    new_user(Jid, m, [], Filter).
+    Format = fun (Trace, _Opts) ->
+                     dbg:dhandler(Trace, user)
+             end,
+    new_user(Jid, m, [], Filter, Format).
 
--spec new_user(jid(), [dbg_flag()], [node()], filter()) -> any() | no_return().
-new_user(Jid, Flags, Nodes, Filter) ->
-    start_new_user_tracer(Nodes, Filter),
+-spec new_user(jid(), filter(), formatter()) -> any() | no_return().
+new_user(Jid, Filter, Format) ->
+    %% TODO: prepare filter
+    new_user(Jid, m, [], Filter, Format).
+
+-spec new_user(jid(), [dbg_flag()], [node()], filter(), formatter())
+    -> any() | no_return().
+new_user(Jid, Flags, Nodes, Filter, Format) ->
+    start_new_user_tracer(Nodes, Filter, Format),
     ejabberd_trace_server:trace_new_user(Jid, Flags).
 
 %% @doc Trace an already logged in user given his/her Jid.
@@ -144,15 +155,13 @@ is_dbg_running() ->
         _ -> false
     end.
 
-start_new_user_tracer(Nodes, Filter) ->
+start_new_user_tracer(Nodes, Filter, Format) ->
     is_dbg_running() andalso error(dbg_running),
     maybe_start(),
     TraceServer = erlang:whereis(ejabberd_trace_server),
     dbg:tracer(process, {fun ?LIB:trace_handler/2,
                          #tstate{filter = Filter,
-                                 format = fun (Trace, _Opts) ->
-                                                  dbg:dhandler(Trace, user)
-                                          end,
+                                 format = Format,
                                  server = TraceServer}}),
     [dbg:n(Node) || Node <- Nodes],
     dbg:p(get_c2s_sup(), [c, m, sos]),
