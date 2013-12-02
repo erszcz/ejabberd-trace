@@ -18,6 +18,9 @@ stream({trace, _Pid, 'receive',
 stream({trace, _Pid, call,
         {ejabberd_c2s, send_text, [_State, Msg]}}, _Opts) ->
     io:format("out :~n~ts~n~n", [Msg]);
+stream({trace, _Pid, call,
+        {ejabberd_c2s, send_element, [_State, Elem]}}, _Opts) ->
+    io:format("out :~n~ts~n~n", [to_iolist(xmlelement_to_xmlel(Elem))]);
 stream(_, _Opts) ->
     ok.
 
