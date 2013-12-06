@@ -81,11 +81,17 @@ The available filters are:
 - [ ] Make filter and formatter choices independent.
       Filter should only filter traces and pass them to a formatter.
 
-- [ ] Make filters composable.
+      This interface needs some polishing.
+      How should the filters be exported from their module?
+      What should the highest level API operate on (atoms, funs)?
+
+- [x] Make filters composable.
       It should be possible to display `routed_in` and `tx` traces
       simultaneously.
 
-- [ ] Sort out logging.
+      There are two combinators available: `any` and `all`.
+
+- [x] Sort out logging.
       There are debug messages logged unconditionally right now, e.g.:
 
         >>>>> caught send_element
@@ -93,3 +99,11 @@ The available filters are:
 
       It would be nice to keep them, but not display all the time.
       It should also be possible to print the traces to a file.
+
+      These are only compiled in when the `debug` compile flag is set.
+
+- [ ] Trace multiple subsequent connections of a given user.
+      A test story may involve the same full jid connecting more than
+      once to fulfill one scenario.
+
+- [ ] Enable functioning in a distributed environment.
