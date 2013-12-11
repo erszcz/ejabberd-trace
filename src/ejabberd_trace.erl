@@ -5,7 +5,8 @@
 %% API
 -export([new_user/1, new_user/2, new_user/3, new_user/5,
          user/1,
-         state/1]).
+         state/1,
+         string_type/0, string_type/1]).
 
 %% `application' callbacks
 -export([start/2,
@@ -79,7 +80,7 @@ new_user(Jid, Filter, Format) ->
     -> any() | no_return().
 new_user(Jid, Flags, Nodes, Filter, Format) ->
     start_new_user_tracer(Nodes, Filter, Format),
-    ejabberd_trace_server:trace_new_user(Jid, Flags).
+    ejabberd_trace_server:trace_new_user(fix_string(Jid), Flags).
 
 %% @doc Trace an already logged in user given his/her Jid.
 %% @end
@@ -131,6 +132,12 @@ state(Jid) ->
             {error, {multiple_sessions, Sessions}}
     end.
 
+string_type(StringType) ->
+    application:set_env(ejabberd_trace, string_type, StringType).
+
+string_type() ->
+    ?LIB:get_env(ejabberd_trace, string_type, list).
+
 %%
 %% `application' callbacks
 %%
@@ -180,7 +187,7 @@ maybe_start() ->
     end.
 
 parse_jid(Jid) ->
-    parse_jid(?LIB:get_env(ejabberd_trace, string_type, list), Jid).
+    parse_jid(string_type(), Jid).
 
 -spec parse_jid(StringType, Jid) -> {User, Domain, Resource} |
                                     {User, Domain} when
@@ -235,3 +242,12 @@ set(Record, FieldValues) ->
                 setelement(Field, Rec, Value)
         end,
     lists:foldl(F, Record, FieldValues).
+
+fix_string(String) ->
+    fix_string(String, string_type()).
+
+-spec fix_string(binary() | string(), string_type()) -> binary() | string().
+fix_string(BString, binary) when is_binary(BString) -> BString;
+fix_string(BString, list) when is_binary(BString) -> binary_to_list(BString);
+fix_string(String, list) when is_list(String) -> String;
+fix_string(String, binary) when is_list(String) -> list_to_binary(String).
