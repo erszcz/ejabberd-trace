@@ -58,6 +58,40 @@ to server connection for a single full JID:
                               ejabberd_trace_filter:stream(),
                               fun ejabberd_trace_format:stream/2).
 
+Example output:
+
+    in :
+    <stream:stream to='localhost' version='1.0' xml:lang='en' xmlns='jabber:client'
+                   xmlns:stream='http://etherx.jabber.org/streams'>
+
+    out :
+    <?xml version='1.0'?>
+    <stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'
+                   id='1217298371' from='localhost' version='1.0' xml:lang='en'>
+
+    out :
+    <stream:features>
+      <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>
+        <mechanism>DIGEST-MD5</mechanism>
+        <mechanism>PLAIN</mechanism>
+        <mechanism>SCRAM-SHA-1</mechanism>
+      </mechanisms>
+      <c ver='mfN6SdQ3DGO7/QUHHftElVDFZ7k='
+         node='http://www.process-one.net/en/ejabberd/'
+         hash='sha-1'
+         xmlns='http://jabber.org/protocol/caps'/>
+      <register xmlns='http://jabber.org/features/iq-register'/>
+      <sm xmlns='urn:xmpp:sm:3'/>
+    </stream:features>
+
+    in :
+    <auth mechanism='PLAIN' xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>AGFsaWNlAG1ha290YQ==</auth>
+
+    out :
+    <success xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>
+
+    ...
+
 ## Filters
 
 It's possible to filter the traces caught for the traced process.
