@@ -142,6 +142,15 @@ routed_out_test_() ->
      ?_eq(false, RO(rx_trace())),
      ?_eq(false, RO(tx_text_trace()))].
 
+stream_test_() ->
+    S = fun stream/1,
+    [?_eq(true, S(tx_streamstart_trace())),
+     ?_eq(true, S(tx_streamend_trace())),
+     ?_eq(true, S(tx_element_trace())),
+     ?_eq(true, S(rx_trace())),
+     ?_eq(false, S(routed_in_trace())),
+     ?_eq(false, S(routed_out_trace()))].
+
 apply_test_() ->
     Ap = fun ?MODULE:apply/2,
     [?_eq(true, Ap(rx, rx_trace())),
