@@ -1,78 +1,55 @@
 -module(ejabberd_trace_filter).
 
-%% Filters
--export([raw_traces/1,
+%% Predefined filters
+-export([all/1,
          rx/1,
          tx/1,
          tx_text/1,
          tx_element/1,
          routed_out/1,
          routed_in/1,
-         stream/0]).
-
-%% Combinators
--export([any/1,
-         all/1]).
+         stream/1]).
 
 %% API
 -export([apply/2]).
 
 %% Types
--type trace() :: any().
--export_type([trace/0]).
+-type filter() :: (predefined_filter() |
+                   {fn, filter_fun()} |
+                   {any, [filter()]} |
+                   {all, [filter()]}).
+-export_type([filter/0]).
+
+-type predefined_filter() :: all | rx | tx | routed_in | routed_out | stream.
+-export_type([predefined_filter/0]).
 
 -define(FILTER_FUN_DEF, (trace()) -> boolean()).
 -type filter_fun() :: fun(?FILTER_FUN_DEF).
 -export_type([filter_fun/0]).
 
--opaque filter() :: ({any, [filter()]} |
-                     {all, [filter()]} |
-                     {filter, filter_fun()}).
--export_type([filter/0]).
+-type trace() :: any().
+-export_type([trace/0]).
+
+%%
+%% API
+%%
 
 -spec apply(filter(), trace()) -> boolean().
 apply({any, Filters}, Trace) ->
     lists:any(fun (F) -> ?MODULE:apply(F, Trace) end, Filters);
 apply({all, Filters}, Trace) ->
     lists:all(fun (F) -> ?MODULE:apply(F, Trace) end, Filters);
-apply({filter, Fun}, Trace) ->
-    Fun(Trace).
-
--spec any([atom() | filter() | filter_fun()]) -> filter().
-any(Filters) ->
-    {any, [get_filter(F) || F <- Filters]}.
-
--spec all([atom() | filter() | filter_fun()]) -> filter().
-all(Filters) ->
-    {all, [get_filter(F) || F <- Filters]}.
-
--spec get_filter(atom() | filter_fun() | filter()) -> filter().
-get_filter(Filter) when is_atom(Filter) ->
-    {filter, fun ?MODULE:Filter/1};
-get_filter(Filter) when is_function(Filter, 1) ->
-    {filter, Filter};
-get_filter(Filter) ->
-    case is_filter(Filter) of
-        true ->
-            Filter;
-        false ->
-            error(badarg, Filter)
-    end.
-
-is_filter({any, _}) -> true;
-is_filter({all, _}) -> true;
-is_filter({filter, _}) -> true;
-is_filter(_) -> false.
-
-stream() ->
-    any([rx, tx]).
+apply({fn, FilterFun}, Trace) when is_function(FilterFun, 1) ->
+    FilterFun(Trace);
+apply(PredefinedFilter, Trace) when is_atom(PredefinedFilter) ->
+    ?MODULE:PredefinedFilter(Trace).
 
 %%
-%% Filters
+%% Predefined filters
 %%
 
--spec raw_traces/1 :: ?FILTER_FUN_DEF.
-raw_traces(_) -> true.
+-spec all/1 :: ?FILTER_FUN_DEF.
+all(_) -> true.
 
 -spec rx/1 :: ?FILTER_FUN_DEF.
 rx(end_of_trace) -> true;
@@ -110,6 +87,10 @@ routed_in(end_of_trace) -> true;
 routed_in({trace, _Pid, 'receive', {route, _From, _To, _Packet}}) -> true;
 routed_in(_) -> false.
 
+-spec stream/1 :: ?FILTER_FUN_DEF.
+stream(Trace) ->
+    ?MODULE:apply({any, [rx, tx]}, Trace).
+
 %%
 %% Tests
 %%
@@ -118,13 +99,6 @@ routed_in(_) -> false.
 -compile([export_all]).
 -include_lib("eunit/include/eunit.hrl").
 -define(_eq(E, I), ?_assertEqual(E, I)).
-
-get_filter_test_() ->
-    GT = fun get_filter/1,
-    [?_eq({filter, fun ?MODULE:rx/1}, GT(rx)),
-     ?_eq({filter, fun ?MODULE:rx/1}, GT(fun ?MODULE:rx/1)),
-     ?_eq({filter, fun ?MODULE:rx/1}, GT({filter, fun ?MODULE:rx/1})),
-     ?_assertError(badarg, GT({some, shit}))].
 
 rx_test_() ->
     [?_eq(true, rx(rx_trace())),
@@ -168,24 +142,13 @@ routed_out_test_() ->
      ?_eq(false, RO(rx_trace())),
      ?_eq(false, RO(tx_text_trace()))].
 
-any_test_() ->
-    [?_eq({any, [get_filter(rx), get_filter(tx)]}, any([rx, tx]))].
-
 apply_test_() ->
     Ap = fun ?MODULE:apply/2,
-    [?_eq(true, Ap(get_filter(rx), rx_trace())),
-     ?_eq(false, Ap(get_filter(rx), tx_text_trace())),
-     ?_eq(true, Ap(any([rx, tx]), rx_trace())),
-     ?_eq(false, Ap(all([rx, tx]), rx_trace()))].
-
-apply_any_test_() ->
-    F = fun(Trace) ->
-                ?MODULE:apply(any([rx, routed_out]), Trace)
-        end,
-    [?_eq(true, F(rx_trace())),
-     ?_eq(true, F(routed_out_trace())),
-     ?_eq(false, F(tx_text_trace())),
-     ?_eq(false, F(routed_in_trace()))].
+    [?_eq(true, Ap(rx, rx_trace())),
+     ?_eq(false, Ap(rx, tx_text_trace())),
+     ?_eq(true, Ap({any, [rx, tx]}, rx_trace())),
+     ?_eq(false, Ap({all, [rx, tx]}, rx_trace())),
+     ?_eq(true, Ap({fn, fun ?MODULE:rx/1}, rx_trace()))].
 
 rx_trace() ->
     {trace,'some_pid','receive',
