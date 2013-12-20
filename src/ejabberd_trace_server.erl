@@ -4,7 +4,7 @@
 
 %% API
 -export([start_link/0,
-         trace_new_user/2]).
+         trace_new_user/1]).
 
 %% Internal API
 -export([set_cache/2,
@@ -32,10 +32,9 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
--spec trace_new_user(ejabberd_trace:jid(),
-                     [ejabberd_trace:dbg_flag()]) -> any().
-trace_new_user(Jid, Flags) ->
-    gen_server:cast(?SERVER, {trace_new_user, Jid, Flags}).
+-spec trace_new_user(ejabberd_trace:jid()) -> any().
+trace_new_user(Jid) ->
+    gen_server:cast(?SERVER, {trace_new_user, Jid}).
 
 %%
 %% Internal API
@@ -74,8 +73,8 @@ handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
-handle_cast({trace_new_user, Jid, Flags}, State) ->
-    NewState = handle_trace_new_user(Jid, Flags, State),
+handle_cast({trace_new_user, Jid}, State) ->
+    NewState = handle_trace_new_user(Jid, State),
     {noreply, NewState};
 handle_cast(_Msg, State) ->
     {noreply, State}.
@@ -104,10 +103,8 @@ handle_get_action(Pid, Default) ->
             Action
     end.
 
-%% Assume the tracer is already started and knows what to do.
-%% What does this handler do?
-%% It only adds one more Jid/Flags to the to-be-traced set.
-handle_trace_new_user(Jid, Flags, #state{} = S) ->
+%% Add one more Jid to the to-be-traced set.
+handle_trace_new_user(Jid, #state{} = S) ->
     ?DEBUG(">>>>> handle trace new user: ~p~n", [Jid]),
-    ets:insert(?NEW_TRACES, {Jid, Flags}),
+    ets:insert(?NEW_TRACES, Jid),
     S#state{cache = true}.
