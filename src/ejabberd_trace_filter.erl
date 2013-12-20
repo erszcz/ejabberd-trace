@@ -11,7 +11,8 @@
          stream/1]).
 
 %% API
--export([apply/2]).
+-export([apply/2,
+         is_filter/1]).
 
 %% Types
 -type filter() :: (predefined_filter() |
@@ -43,6 +44,20 @@ apply({fn, FilterFun}, Trace) when is_function(FilterFun, 1) ->
     FilterFun(Trace);
 apply(PredefinedFilter, Trace) when is_atom(PredefinedFilter) ->
     ?MODULE:PredefinedFilter(Trace).
+
+-spec is_filter(any()) -> boolean().
+is_filter(all) -> true;
+is_filter(rx) -> true;
+is_filter(tx) -> true;
+is_filter(tx_text) -> true;
+is_filter(tx_element) -> true;
+is_filter(routed_in) -> true;
+is_filter(routed_out) -> true;
+is_filter(stream) -> true;
+is_filter({any, Filters}) -> lists:all(fun is_filter/1, Filters);
+is_filter({all, Filters}) -> lists:all(fun is_filter/1, Filters);
+is_filter({fn, FilterFun}) when is_function(FilterFun, 1) -> true;
+is_filter(_) -> false.
 
 %%
 %% Predefined filters

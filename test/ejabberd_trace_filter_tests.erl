@@ -72,6 +72,15 @@ apply_test_() ->
      ?_eq(false, Ap({all, [rx, tx]}, rx_trace())),
      ?_eq(true, Ap({fn, fun ejabberd_trace_filter:rx/1}, rx_trace()))].
 
+is_filter_test_() ->
+    I = fun ejabberd_trace_filter:is_filter/1,
+    [?_eq(true, I(rx)),
+     ?_eq(true, I({any, [rx, tx]})),
+     ?_eq(true, I({all, [rx, tx]})),
+     ?_eq(true, I({fn, fun ejabberd_trace_filter:rx/1})),
+     ?_eq(false, I(not_a_filter)),
+     ?_eq(false, I({all, [rx, tx, not_a_filter]}))].
+
 %%
 %% Fixtures
 %%
