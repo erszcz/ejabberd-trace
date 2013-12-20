@@ -39,24 +39,20 @@
 %% API
 %%
 
-%% @doc Trace a user who is to connect in near future once he/she connects.
+%% @doc `new_user/1,2,3,5' traces a user who is to connect in near
+%% future once he/she connects.
 %% This intends to trace *all* of the communication of a specific connection.
 %%
 %% The usage scenario is as follows:
-%% 1) `new_user/1,2' is called (e.g. from the shell) - the call blocks,
-%% 2) the user connects,
-%% 3) the call returns while the connection process responsible for `Jid'
-%%    is being traced.
-%%
-%% The magic happens in step (2) as the connection process is involved
-%% and also more users than the one expected might connect.
-%% This function takes care of determining who of those who connected
-%% to trace based on his/her `Jid'.
-%% In order to do that some stanza with the Jid must already be sent
-%% on the connection - only then the matching may success.
-%% This function buffers all debug messages up to the point of receiving
-%% that stanza; then it forwards all the buffered messages for the traced user
-%% and discards all the rest.
+%% 1) `new_user/1,2,3,5' is called (e.g. from the shell);
+%%    all c2s connections to the server established from this moment
+%%    are traced and the messages they receive analysed for the presence
+%%    of the JID in question,
+%% 2) the expected user connects,
+%% 3) all buffered traces except those of the expected user are discarded;
+%%    traces of that user are filtered with the defined filter and passed
+%%    to the chosen formatter;
+%% 4) the tracing continues as it would with `dbg'.
 %% @end
 
 -spec new_user(jid()) -> any() | no_return().
@@ -65,7 +61,6 @@ new_user(Jid) ->
 
 -spec new_user(jid(), filter()) -> any() | no_return().
 new_user(Jid, Filter) ->
-    %% TODO: prepare filter
     Format = fun (Trace, _Opts) ->
                      dbg:dhandler(Trace, user)
              end,
@@ -73,7 +68,6 @@ new_user(Jid, Filter) ->
 
 -spec new_user(jid(), filter(), formatter()) -> any() | no_return().
 new_user(Jid, Filter, Format) ->
-    %% TODO: prepare filter
     new_user(Jid, m, [], Filter, Format).
 
 -spec new_user(jid(), [dbg_flag()], [node()], filter(), formatter())
