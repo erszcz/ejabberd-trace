@@ -1,5 +1,30 @@
 -module(ejabberd_trace_filter).
 
+%% Types
+-export_type([filter/0,
+              predefined_filter/0,
+              filter_fun/0,
+              trace/0]).
+
+-type filter() :: (predefined_filter() |
+                   {fn, filter_fun()} |
+                   {any, [filter()]} |
+                   {all, [filter()]}).
+
+-type predefined_filter() :: (all |
+                              rx |
+                              tx |
+                              tx_text |
+                              tx_element |
+                              routed_in |
+                              routed_out |
+                              stream).
+
+-define(FILTER_FUN_DEF, (trace()) -> boolean()).
+-type filter_fun() :: fun(?FILTER_FUN_DEF).
+
+-type trace() :: any().
+
 %% Predefined filters
 -export([all/1,
          rx/1,
@@ -13,23 +38,6 @@
 %% API
 -export([apply/2,
          is_filter/1]).
-
-%% Types
--type filter() :: (predefined_filter() |
-                   {fn, filter_fun()} |
-                   {any, [filter()]} |
-                   {all, [filter()]}).
--export_type([filter/0]).
-
--type predefined_filter() :: all | rx | tx | routed_in | routed_out | stream.
--export_type([predefined_filter/0]).
-
--define(FILTER_FUN_DEF, (trace()) -> boolean()).
--type filter_fun() :: fun(?FILTER_FUN_DEF).
--export_type([filter_fun/0]).
-
--type trace() :: any().
--export_type([trace/0]).
 
 %%
 %% API
