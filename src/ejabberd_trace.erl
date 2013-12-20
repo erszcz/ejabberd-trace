@@ -78,7 +78,7 @@ new_user(Jid, Flags, Nodes, Filter, Format) ->
         Args = [Jid, Flags, Nodes, Filter, Format],
         error(badarg, Args)
     end,
-    start_new_user_tracer(Nodes, Filter, Format),
+    maybe_start_dbg(is_dbg_running(), Nodes, Filter, Format),
     ejabberd_trace_server:trace_new_user(fix_string(Jid), Flags).
 
 %% @doc Trace an already logged in user given his/her Jid.
@@ -161,9 +161,21 @@ is_dbg_running() ->
         _ -> false
     end.
 
-start_new_user_tracer(Nodes, Filter, Format) ->
-    is_dbg_running() andalso error(dbg_running),
-    maybe_start(),
+maybe_start_dbg(true, _Nodes, _Filter, _Format) ->
+    case ?LIB:get_env(ejabberd_trace, my_dbg, false) of
+        true ->
+            ok;
+        _ ->
+            io:format("ejabberd_trace requires dbg to work, "
+                      "but dbg is already running.~n"
+                      "If you're sure it's safe to stop it use "
+                      "dbg:stop_clear() and retry this call.~n"),
+            error(dbg_running)
+    end;
+
+maybe_start_dbg(false, Nodes, Filter, Format) ->
+    application:start(sasl),
+    application:start(ejabberd_trace),
     TraceServer = erlang:whereis(ejabberd_trace_server),
     dbg:tracer(process, {fun ?LIB:trace_handler/2,
                          #tstate{filter = Filter,
@@ -173,17 +185,8 @@ start_new_user_tracer(Nodes, Filter, Format) ->
     dbg:p(get_c2s_sup(), [c, m, sos]),
     dbg:tpl(ejabberd_c2s, send_text, x),
     dbg:tpl(ejabberd_c2s, send_element, x),
+    application:set_env(ejabberd_trace, my_dbg, true),
     ok.
-
-maybe_start() ->
-    Apps = application:which_applications(),
-    case lists:keymember(ejabberd_trace, 1, Apps) of
-        true ->
-            ok;
-        false ->
-            application:start(sasl),
-            application:start(ejabberd_trace)
-    end.
 
 parse_jid(Jid) ->
     parse_jid(string_type(), Jid).
