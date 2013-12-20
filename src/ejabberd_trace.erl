@@ -33,6 +33,9 @@
 
 -type formatter() :: fun().
 
+-type trace_opts() :: [trace_opt()].
+-type trace_opt() :: ({nconns, pos_integer() | infinity}).
+
 -include("ejabberd_trace_internal.hrl").
 
 %%
@@ -59,8 +62,9 @@
 new_user(Jid) ->
     new_user(Jid, stream, fun ejabberd_trace_format:stream/2).
 
--spec new_user(jid(), filter(), formatter()) -> any() | no_return().
-new_user(Jid, Filter, Format) ->
+-spec new_user(jid(), filter(), formatter(), trace_opts()) -> any() |
+                                                              no_return().
+new_user(Jid, Filter, Format, Opts) ->
     ejabberd_trace_filter:is_filter(Filter) orelse
     begin
         Args = [Jid, Filter, Format],
