@@ -28,7 +28,7 @@
 -type xmlelement() :: any().
 -export_type([xmlelement/0]).
 
--type filter() :: raw_traces | dbg | tx | rx | routed_out | routed_in.
+-type filter() :: ejabberd_trace_filter:filter().
 -export_type([filter/0]).
 
 -type formatter() :: fun().
@@ -73,6 +73,11 @@ new_user(Jid, Filter, Format) ->
 -spec new_user(jid(), [dbg_flag()], [node()], filter(), formatter())
     -> any() | no_return().
 new_user(Jid, Flags, Nodes, Filter, Format) ->
+    ejabberd_trace_filter:is_filter(Filter) orelse
+    begin
+        Args = [Jid, Flags, Nodes, Filter, Format],
+        error(badarg, Args)
+    end,
     start_new_user_tracer(Nodes, Filter, Format),
     ejabberd_trace_server:trace_new_user(fix_string(Jid), Flags).
 
