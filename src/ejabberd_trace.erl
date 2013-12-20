@@ -3,7 +3,7 @@
 -behaviour(application).
 
 %% API
--export([new_user/1, new_user/2, new_user/3, new_user/5,
+-export([new_user/1, new_user/3,
          user/1,
          state/1,
          string_type/0, string_type/1]).
@@ -39,12 +39,12 @@
 %% API
 %%
 
-%% @doc `new_user/1,2,3,5' traces a user who is to connect in near
+%% @doc `new_user/1,3' traces a user who is to connect in near
 %% future once he/she connects.
 %% This intends to trace *all* of the communication of a specific connection.
 %%
 %% The usage scenario is as follows:
-%% 1) `new_user/1,2,3,5' is called (e.g. from the shell);
+%% 1) `new_user/1,3' is called (e.g. from the shell);
 %%    all c2s connections to the server established from this moment
 %%    are traced and the messages they receive analysed for the presence
 %%    of the JID in question,
@@ -57,29 +57,17 @@
 
 -spec new_user(jid()) -> any() | no_return().
 new_user(Jid) ->
-    new_user(Jid, m).
-
--spec new_user(jid(), filter()) -> any() | no_return().
-new_user(Jid, Filter) ->
-    Format = fun (Trace, _Opts) ->
-                     dbg:dhandler(Trace, user)
-             end,
-    new_user(Jid, m, [], Filter, Format).
+    new_user(Jid, stream, fun ejabberd_trace_format:stream/2).
 
 -spec new_user(jid(), filter(), formatter()) -> any() | no_return().
 new_user(Jid, Filter, Format) ->
-    new_user(Jid, m, [], Filter, Format).
-
--spec new_user(jid(), [dbg_flag()], [node()], filter(), formatter())
-    -> any() | no_return().
-new_user(Jid, Flags, Nodes, Filter, Format) ->
     ejabberd_trace_filter:is_filter(Filter) orelse
     begin
-        Args = [Jid, Flags, Nodes, Filter, Format],
+        Args = [Jid, Filter, Format],
         error(badarg, Args)
     end,
-    maybe_start_dbg(is_dbg_running(), Nodes, Filter, Format),
-    ejabberd_trace_server:trace_new_user(fix_string(Jid), Flags).
+    maybe_start_dbg(is_dbg_running(), Filter, Format),
+    ejabberd_trace_server:trace_new_user(fix_string(Jid)).
 
 %% @doc Trace an already logged in user given his/her Jid.
 %% @end
@@ -161,7 +149,7 @@ is_dbg_running() ->
         _ -> false
     end.
 
-maybe_start_dbg(true, _Nodes, _Filter, _Format) ->
+maybe_start_dbg(true, _Filter, _Format) ->
     case ?LIB:get_env(ejabberd_trace, my_dbg, false) of
         true ->
             ok;
@@ -173,7 +161,7 @@ maybe_start_dbg(true, _Nodes, _Filter, _Format) ->
             error(dbg_running)
     end;
 
-maybe_start_dbg(false, Nodes, Filter, Format) ->
+maybe_start_dbg(false, Filter, Format) ->
     application:start(sasl),
     application:start(ejabberd_trace),
     TraceServer = erlang:whereis(ejabberd_trace_server),
@@ -181,7 +169,6 @@ maybe_start_dbg(false, Nodes, Filter, Format) ->
                          #tstate{filter = Filter,
                                  format = Format,
                                  server = TraceServer}}),
-    [dbg:n(Node) || Node <- Nodes],
     dbg:p(get_c2s_sup(), [c, m, sos]),
     dbg:tpl(ejabberd_c2s, send_text, x),
     dbg:tpl(ejabberd_c2s, send_element, x),
