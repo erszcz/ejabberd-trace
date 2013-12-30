@@ -37,5 +37,6 @@ xmlelement_to_xmlel(Other) ->
 to_iolist(Elem) ->
     exml:to_pretty_iolist(Elem).
 
+-spec is_formatter(any()) -> boolean().
 is_formatter(Format) when is_function(Format, 2) -> true;
 is_formatter(_) -> false.

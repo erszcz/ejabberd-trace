@@ -6,6 +6,11 @@
 %% dbg handler
 -export([trace_handler/2]).
 
+-type xmlelement() :: {xmlel | xmlelement,
+                       list() | binary(),
+                       [{list() | binary(), list() | binary()}],
+                       [any()]}.
+
 -include("ejabberd_trace_internal.hrl").
 
 %% @doc Return `Application' environment variable `Par'.
@@ -27,7 +32,7 @@ get_env(Application, Par, Def) ->
         XML =:= xmlel orelse XML =:= xmlelement,
         Bind =:= "bind" orelse Bind =:= <<"bind">>).
 
--spec extract_jid(ejabberd_trace:xmlelement()) -> ejabberd_trace:jid() | false.
+-spec extract_jid(xmlelement()) -> ejabberd_trace:jid() | false.
 extract_jid({XML, IQ, _, [{XML2, Bind, _, [{_, _, _, [{xmlcdata, Jid}]}]}]})
   when ?IS_IQ(XML, IQ) andalso ?IS_BIND(XML2, Bind) ->
     ?DEBUG(">>>>> found Jid: ~p~n", [Jid]),
