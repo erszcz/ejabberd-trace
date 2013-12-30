@@ -4,6 +4,10 @@
          stream/2,
          is_formatter/1]).
 
+-export_type([formatter/0]).
+
+-type formatter() :: fun().
+
 raw(Trace, _Opts) ->
     io:format("raw: ~p~n", [Trace]).
 

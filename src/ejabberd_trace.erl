@@ -13,28 +13,20 @@
          stop/1]).
 
 %% Types
--type dbg_flag() :: s | r | m | c | p | sos | sol | sofs | sofl | all | clear.
--export_type([dbg_flag/0]).
-
--type sys_status() :: {status, pid(), {module, module()}, [any()]}.
--export_type([sys_status/0]).
+-export_type([jid/0,
+              filter/0,
+              formatter/0,
+              trace_opts/0,
+              sys_status/0,
+              string_type/0]).
 
 -type jid() :: string().
--export_type([jid/0]).
-
--type string_type() :: list | binary.
--export_type([string_type/0]).
-
--type xmlelement() :: any().
--export_type([xmlelement/0]).
-
 -type filter() :: ejabberd_trace_filter:filter().
--export_type([filter/0]).
-
--type formatter() :: fun().
-
+-type formatter() :: ejabberd_trace_format:formatter().
 -type trace_opts() :: [trace_opt()].
 -type trace_opt() :: ({repeat, pos_integer() | infinity}).
+-type sys_status() :: {status, pid(), {module, module()}, [any()]}.
+-type string_type() :: list | binary.
 
 -include("ejabberd_trace_internal.hrl").
 
