@@ -1,7 +1,8 @@
 -module(ejabberd_trace_format).
 
 -export([raw/2,
-         stream/2]).
+         stream/2,
+         is_formatter/1]).
 
 raw(Trace, _Opts) ->
     io:format("raw: ~p~n", [Trace]).
@@ -31,3 +32,6 @@ xmlelement_to_xmlel(Other) ->
 
 to_iolist(Elem) ->
     exml:to_pretty_iolist(Elem).
+
+is_formatter(Format) when is_function(Format, 2) -> true;
+is_formatter(_) -> false.

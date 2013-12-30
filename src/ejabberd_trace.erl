@@ -3,7 +3,7 @@
 -behaviour(application).
 
 %% API
--export([new_user/1, new_user/3,
+-export([new_user/1, new_user/4,
          user/1,
          state/1,
          string_type/0, string_type/1]).
@@ -33,18 +33,21 @@
 
 -type formatter() :: fun().
 
+-type trace_opts() :: [trace_opt()].
+-type trace_opt() :: ({repeat, pos_integer() | infinity}).
+
 -include("ejabberd_trace_internal.hrl").
 
 %%
 %% API
 %%
 
-%% @doc `new_user/1,3' traces a user who is to connect in near
+%% @doc `new_user/1,4' traces a user who is to connect in near
 %% future once he/she connects.
 %% This intends to trace *all* of the communication of a specific connection.
 %%
 %% The usage scenario is as follows:
-%% 1) `new_user/1,3' is called (e.g. from the shell);
+%% 1) `new_user/1,4' is called (e.g. from the shell);
 %%    all c2s connections to the server established from this moment
 %%    are traced and the messages they receive analysed for the presence
 %%    of the JID in question,
@@ -57,15 +60,13 @@
 
 -spec new_user(jid()) -> any() | no_return().
 new_user(Jid) ->
-    new_user(Jid, stream, fun ejabberd_trace_format:stream/2).
+    new_user(Jid, stream, fun ejabberd_trace_format:stream/2, []).
 
--spec new_user(jid(), filter(), formatter()) -> any() | no_return().
-new_user(Jid, Filter, Format) ->
-    ejabberd_trace_filter:is_filter(Filter) orelse
-    begin
-        Args = [Jid, Filter, Format],
-        error(badarg, Args)
-    end,
+-spec new_user(jid(), filter(), formatter(), trace_opts()) -> any() |
+                                                              no_return().
+new_user(Jid, Filter, Format, Opts) ->
+    Args = [Jid, Filter, Format, Opts],
+    validate_args(new_user, Args) orelse error(badarg, Args),
     maybe_start_dbg(is_dbg_running(), Filter, Format),
     ejabberd_trace_server:trace_new_user(fix_string(Jid)).
 
@@ -77,13 +78,7 @@ new_user(Jid, Filter, Format) ->
                      {error, {multiple_sessions, list()}} |
                      {error, any()}.
 user(Jid) ->
-    user(Jid, m).
-
--spec user(jid(), [dbg_flag()]) -> {ok, any()} |
-                                   {error, not_found} |
-                                   {error, {multiple_sessions, list()}} |
-                                   {error, any()}.
-user(Jid, Flags) ->
+    validate_args(user, [Jid]) orelse error(badarg, [Jid]),
     is_dbg_running() orelse dbg:tracer(),
     %% TODO: use ejabberd_sm to get the session list!
     UserSpec = parse_jid(Jid),
@@ -93,9 +88,9 @@ user(Jid, Flags) ->
         [] ->
             {error, not_found};
         [{_, C2SPid}] ->
-            dbg:p(C2SPid, Flags);
+            dbg:p(C2SPid, [m]);
         [C2SPid] ->
-            dbg:p(C2SPid, Flags);
+            dbg:p(C2SPid, [m]);
         [_|_] = Sessions ->
             {error, {multiple_sessions, Sessions}}
     end.
@@ -240,3 +235,15 @@ fix_string(BString, binary) when is_binary(BString) -> BString;
 fix_string(BString, list) when is_binary(BString) -> binary_to_list(BString);
 fix_string(String, list) when is_list(String) -> String;
 fix_string(String, binary) when is_list(String) -> list_to_binary(String).
+
+validate_args(new_user, [Jid, Filter, Format, Opts]) ->
+    is_list(Jid)
+    andalso
+    ejabberd_trace_filter:is_filter(Filter)
+    andalso
+    ejabberd_trace_format:is_formatter(Format)
+    andalso
+    is_list(Opts);
+
+validate_args(user, [Jid]) ->
+    is_list(Jid).
