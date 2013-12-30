@@ -80,39 +80,14 @@ new_user(Jid, Filter, Format, Opts) ->
 user(Jid) ->
     validate_args(user, [Jid]) orelse error(badarg, [Jid]),
     is_dbg_running() orelse dbg:tracer(),
-    %% TODO: use ejabberd_sm to get the session list!
-    UserSpec = parse_jid(Jid),
-    MatchSpec = match_session_pid(UserSpec),
-    error_logger:info_msg("Session match spec: ~p~n", [MatchSpec]),
-    case ets:select(session, MatchSpec) of
-        [] ->
-            {error, not_found};
-        [{_, C2SPid}] ->
-            dbg:p(C2SPid, [m]);
-        [C2SPid] ->
-            dbg:p(C2SPid, [m]);
-        [_|_] = Sessions ->
-            {error, {multiple_sessions, Sessions}}
-    end.
+    with_c2s_pid(Jid, fun (C2SPid) -> dbg:p(C2SPid, [m]) end).
 
 %% @doc Return sys:get_status/1 result of the process corresponding to Jid.
 %% @end
 
 -spec state(jid()) -> sys_status().
 state(Jid) ->
-    UserSpec = parse_jid(Jid),
-    MatchSpec = match_session_pid(UserSpec),
-    error_logger:info_msg("Session match spec: ~p~n", [MatchSpec]),
-    case ets:select(session, MatchSpec) of
-        [] ->
-            {error, not_found};
-        [{_, C2SPid}] ->
-            sys:get_status(C2SPid);
-        [C2SPid] ->
-            sys:get_status(C2SPid);
-        [_|_] = Sessions ->
-            {error, {multiple_sessions, Sessions}}
-    end.
+    with_c2s_pid(Jid, fun (C2SPid) -> sys:get_status(C2SPid) end).
 
 string_type(StringType) ->
     application:set_env(ejabberd_trace, string_type, StringType).
@@ -247,3 +222,19 @@ validate_args(new_user, [Jid, Filter, Format, Opts]) ->
 
 validate_args(user, [Jid]) ->
     is_list(Jid).
+
+with_c2s_pid(Jid, Fun) ->
+    UserSpec = parse_jid(Jid),
+    %% TODO: use ejabberd_sm to get the session list!
+    MatchSpec = match_session_pid(UserSpec),
+    ?DEBUG("Session match spec: ~p~n", [MatchSpec]),
+    case ets:select(session, MatchSpec) of
+        [] ->
+            {error, not_found};
+        [{_, C2SPid}] ->
+            Fun(C2SPid);
+        [C2SPid] ->
+            Fun(C2SPid);
+        [_|_] = Sessions ->
+            {error, {multiple_sessions, Sessions}}
+    end.
