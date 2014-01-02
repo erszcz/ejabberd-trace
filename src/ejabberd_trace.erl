@@ -6,7 +6,8 @@
 -export([new_user/1, new_user/4,
          user/1,
          state/1,
-         string_type/0, string_type/1]).
+         string_type/0, string_type/1,
+         autodetect_string_type/0]).
 
 %% `application' callbacks
 -export([start/2,
@@ -87,11 +88,23 @@ string_type(StringType) ->
 string_type() ->
     ?LIB:get_env(ejabberd_trace, string_type, list).
 
+autodetect_string_type() ->
+    [{config, hosts, Hosts}] = ets:lookup(config, hosts),
+    case Hosts of
+        [H|_] when is_binary(H) ->
+            string_type(binary);
+        [H|_] when is_list(H) ->
+            string_type(list);
+        _ ->
+            ok
+    end.
+
 %%
 %% `application' callbacks
 %%
 
 start(_StartType, _Args) ->
+    autodetect_string_type(),
     ejabberd_trace_sup:start_link().
 
 stop(_) ->
