@@ -2,6 +2,7 @@
 
 -export([raw/2,
          stream/2,
+         mim_bosh/2,
          is_formatter/1]).
 
 -export_type([formatter/0]).
@@ -27,6 +28,16 @@ stream({trace, _Pid, call,
         {ejabberd_c2s, send_element, [_State, Elem]}}, _Opts) ->
     io:format("out :~n~ts~n", [to_iolist(xmlelement_to_xmlel(Elem))]);
 stream(_, _Opts) ->
+    ok.
+
+mim_bosh({trace, _Pid, 'receive',
+          {'$gen_all_state_event', {EventType, Handler, Body}}}, _Opts) ->
+    io:format("bosh in event=~s handler=~p:~n~ts~n",
+              [EventType, Handler, to_iolist(Body)]);
+mim_bosh({trace, _Pid, send, {bosh_reply, Body}, To}, _Opts) ->
+    io:format("bosh out handler=~p:~n~ts~n",
+              [To, to_iolist(Body)]);
+mim_bosh(_, _Opts) ->
     ok.
 
 xmlelement_to_xmlel({xmlelement, Name, Attrs, Children}) ->
