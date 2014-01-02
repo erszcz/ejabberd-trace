@@ -7,7 +7,8 @@
          user/1,
          state/1,
          string_type/0, string_type/1,
-         autodetect_string_type/0]).
+         autodetect_string_type/0,
+         is_dbg_running/0]).
 
 %% `application' callbacks
 -export([start/2,
@@ -99,6 +100,12 @@ autodetect_string_type() ->
             ok
     end.
 
+is_dbg_running() ->
+    case erlang:whereis(dbg) of
+        Pid when is_pid(Pid) -> true;
+        _ -> false
+    end.
+
 %%
 %% `application' callbacks
 %%
@@ -117,12 +124,6 @@ stop(_) ->
 -spec get_c2s_sup() -> pid() | undefined.
 get_c2s_sup() ->
     erlang:whereis(ejabberd_c2s_sup).
-
-is_dbg_running() ->
-    case erlang:whereis(dbg) of
-        Pid when is_pid(Pid) -> true;
-        _ -> false
-    end.
 
 maybe_start_dbg(true, _Filter, _Format) ->
     case ?LIB:get_env(ejabberd_trace, my_dbg, false) of
