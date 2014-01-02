@@ -103,7 +103,7 @@ do_trace_user(Jid, Pid, #tstate{server = TraceServer} = TState) ->
         [] ->
             ?DEBUG(">>>>> fake trace: not tracing~n", []),
             ok;
-        [{Jid, _Flags}] ->
+        [{Jid}] ->
             ?DEBUG(">>>>> fake trace: tracing ~n", []),
             ets:delete(?NEW_TRACES, Jid),
             flush_cache(Pid, TState),

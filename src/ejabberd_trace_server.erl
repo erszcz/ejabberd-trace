@@ -106,5 +106,5 @@ handle_get_action(Pid, Default) ->
 %% Add one more Jid to the to-be-traced set.
 handle_trace_new_user(Jid, #state{} = S) ->
     ?DEBUG(">>>>> handle trace new user: ~p~n", [Jid]),
-    ets:insert(?NEW_TRACES, Jid),
+    ets:insert(?NEW_TRACES, {Jid}),
     S#state{cache = true}.
