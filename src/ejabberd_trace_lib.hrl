@@ -27,4 +27,10 @@
         {ejabberd_c2s, send_element} == {?EL(1, ?EL(4, T)),
                                          ?EL(2, ?EL(4, T))}).
 
+-define(IS_BOSH_TRIGGER(T),
+        size(T) == 5,
+        {trace, send, bosh_reply} == {?EL(1, T),
+                                      ?EL(3, T),
+                                      ?EL(1, ?EL(4, T))}).
+
 -endif. %% not defined ejabberd_trace_lib_747e

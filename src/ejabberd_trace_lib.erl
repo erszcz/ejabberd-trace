@@ -42,11 +42,31 @@ extract_jid(_) ->
     ?DEBUG(">>>>> found no Jid~n", []),
     false.
 
-trace_handler({trace, Pid, call,
-               {ejabberd_c2s, send_element, [_, BindResult]}} = T,
-              #tstate{} = TState) ->
-    ?DEBUG(">>>>> caught send_element~n", []),
-    handle_trace(T, Pid, TState),
+-define(EL(N, Tuple), element(N, Tuple)).
+
+-define(IS_C2S_TRIGGER(T),
+        size(T) == 4,
+        {trace, call} == {?EL(1, T), ?EL(3, T)},
+        {ejabberd_c2s, send_element} == {?EL(1, ?EL(4, T)),
+                                         ?EL(2, ?EL(4, T))}).
+
+-define(IS_BOSH_TRIGGER(T),
+        size(T) == 5,
+        {trace, send, bosh_reply} == {?EL(1, T),
+                                      ?EL(3, T),
+                                      ?EL(1, ?EL(4, T))}).
+
+%trace_handler({trace, Pid, call,
+               %{ejabberd_c2s, send_element, [_, BindResult]}} = T,
+              %#tstate{} = TState) ->
+
+trace_handler(Trace, #tstate{} = TState)
+  when ?IS_C2S_TRIGGER(Trace) ->
+    Pid = element(2, Trace),
+    %% TODO: extract BindResult from Trace
+    BindResult = 1/0,
+    ?DEBUG(">>>>> c2s trigger matched pid=~p~n", [Pid]),
+    handle_trace(Trace, Pid, TState),
     case extract_jid(BindResult) of
         false ->
             ok;
@@ -148,6 +168,14 @@ example_bind(Jid) ->
        [{"xmlns", "urn:ietf:params:xml:ns:xmpp-bind"}],
        [{xmlelement, "jid",[],
          [{xmlcdata, Jid}]}]}]}.
+
+%% TODO
+c2s_trigger_test() ->
+    error(unimplemented).
+
+%% TODO
+bosh_trigger_test() ->
+    error(unimplemented).
 
 extract_jid_test() ->
     Jid = "qwe@localhost/x3",

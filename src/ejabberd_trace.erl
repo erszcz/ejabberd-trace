@@ -121,9 +121,11 @@ stop(_) ->
 %% Internal functions
 %%
 
--spec get_c2s_sup() -> pid() | undefined.
-get_c2s_sup() ->
-    erlang:whereis(ejabberd_c2s_sup).
+-spec get_sup(atom()) -> pid() | undefined.
+get_sup(c2s) ->
+    erlang:whereis(ejabberd_c2s_sup);
+get_sup(bosh) ->
+    erlang:whereis(ejabberd_mod_bosh_socket_sup).
 
 maybe_start_dbg(true, _Filter, _Format) ->
     case ?LIB:get_env(ejabberd_trace, my_dbg, false) of
@@ -145,7 +147,7 @@ maybe_start_dbg(false, Filter, Format) ->
                          #tstate{filter = Filter,
                                  format = Format,
                                  server = TraceServer}}),
-    dbg:p(get_c2s_sup(), [c, m, sos]),
+    [dbg:p(Sup, [c, m, sos]) || Sup <- [get_sup(c2s), get_sup(bosh)]],
     dbg:tpl(ejabberd_c2s, send_text, x),
     dbg:tpl(ejabberd_c2s, send_element, x),
     application:set_env(ejabberd_trace, my_dbg, true),
