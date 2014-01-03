@@ -42,24 +42,6 @@ extract_jid(_) ->
     ?DEBUG(">>>>> found no Jid~n", []),
     false.
 
--define(EL(N, Tuple), element(N, Tuple)).
-
--define(IS_C2S_TRIGGER(T),
-        size(T) == 4,
-        {trace, call} == {?EL(1, T), ?EL(3, T)},
-        {ejabberd_c2s, send_element} == {?EL(1, ?EL(4, T)),
-                                         ?EL(2, ?EL(4, T))}).
-
--define(IS_BOSH_TRIGGER(T),
-        size(T) == 5,
-        {trace, send, bosh_reply} == {?EL(1, T),
-                                      ?EL(3, T),
-                                      ?EL(1, ?EL(4, T))}).
-
-%trace_handler({trace, Pid, call,
-               %{ejabberd_c2s, send_element, [_, BindResult]}} = T,
-              %#tstate{} = TState) ->
-
 trace_handler(Trace, #tstate{} = TState)
   when ?IS_C2S_TRIGGER(Trace) ->
     Pid = element(2, Trace),
