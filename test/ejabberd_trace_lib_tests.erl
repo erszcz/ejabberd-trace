@@ -19,12 +19,11 @@ c2s_trigger_test() ->
            true -> false
        end).
 
-bosh_trigger_test() ->
-    T = bosh_trace(),
-    ?a(if
-           ?IS_BOSH_TRIGGER(T) -> true;
-           true -> false
-       end).
+bosh_trigger_test_() ->
+    P = fun (T) when ?IS_BOSH_TRIGGER(T) -> true;
+            (_) -> false end,
+    [?_a(P(bosh_trace())),
+     ?_a(not P(bosh_trace_no_bind_result()))].
 
 get_bind_result_test_() ->
     G = fun ejabberd_trace_lib:get_bind_result/1,
@@ -97,4 +96,15 @@ bosh_trace() ->
            [{xmlel,<<"jid">>,[],
              [{xmlcdata,
                <<"carol@localhost/escalus-default-resource">>}]}]}]}]}},
+     pid_port_fun_ref}.
+
+bosh_trace_no_bind_result() ->
+    {trace,pid_port_fun_ref,send,
+     {bosh_reply,
+      {xmlel,<<"body">>,
+       [{<<"sid">>,
+         <<"877fa96ae38ed088312ced71430e6b1cfc22aca5">>},
+        {<<"xmlns">>,
+         <<"http://jabber.org/protocol/httpbind">>}],
+       []}},
      pid_port_fun_ref}.

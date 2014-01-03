@@ -35,10 +35,14 @@
         {ejabberd_c2s, send_element} == {?EL(1, ?EL(4, T)),
                                          ?EL(2, ?EL(4, T))}).
 
+-define(BOSH_REPLY(BoshTrace), ?EL(4, BoshTrace)).
+
 -define(IS_BOSH_TRIGGER(T),
         size(T) == 5,
         {trace, send, bosh_reply} == {?EL(1, T),
                                       ?EL(3, T),
-                                      ?EL(1, ?EL(4, T))}).
+                                      ?EL(1, ?BOSH_REPLY(T))},
+        length( ?CHILDREN(?EL(2, ?BOSH_REPLY(T))) ) == 1,
+        ?IS_BIND_RESULT(hd( ?CHILDREN(?EL(2, ?BOSH_REPLY(T))) ))).
 
 -endif. %% not defined ejabberd_trace_lib_747e
