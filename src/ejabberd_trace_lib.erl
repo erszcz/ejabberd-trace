@@ -30,15 +30,8 @@ get_env(Application, Par, Def) ->
     end.
 
 -spec get_jid(xmlelement()) -> ejabberd_trace:jid() | false.
-%% TODO: compiler crashes on this head, report bug
-%% get_jid({_, _, _, [{_, _, _, [Jid]} = Bind]} = BindIQResult)
-%%   when ?IS_XMLEL(BindIQResult),
-%%        ?IS_BIND(Bind),
-%%        ?IS_JID(Jid) ->
 get_jid({_, _, _, [{_, _, _, [Jid]}]} = BindIQResult)
-  when ?IS_IQ(BindIQResult),
-       ?IS_BIND(hd(?EL(4, BindIQResult))),
-       ?IS_JID(Jid) ->
+  when ?IS_BIND_RESULT(BindIQResult) ->
     {_, _, _, [{xmlcdata, RealJid}]} = Jid,
     ?DEBUG(">>>>> found Jid: ~p~n", [RealJid]),
     RealJid;

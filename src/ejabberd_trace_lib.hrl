@@ -2,6 +2,7 @@
 -define(ejabberd_trace_lib_747e, true).
 
 -define(EL(N, Tuple), element(N, Tuple)).
+-define(CHILDREN(El), ?EL(4, El)).
 
 -define(IS_XMLEL(El),
         size(El) =:= 4,
@@ -20,6 +21,13 @@
 -define(IS_JID(El),
         ?IS_XMLEL(El),
         ?EL(2, El) =:= "jid" orelse ?EL(2, El) =:= <<"jid">>).
+
+-define(IS_BIND_RESULT(El),
+        ?IS_IQ(El),
+        length(?CHILDREN(El)) == 1,
+        ?IS_BIND(hd(?CHILDREN(El))),
+        length(?CHILDREN( hd(?CHILDREN(El)) )) == 1,
+        ?IS_JID( hd(?CHILDREN( hd(?CHILDREN(El)) )) )).
 
 -define(IS_C2S_TRIGGER(T),
         size(T) == 4,

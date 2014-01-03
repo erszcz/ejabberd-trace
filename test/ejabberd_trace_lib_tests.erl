@@ -37,10 +37,8 @@ get_jid_test_() ->
     [?_eq(<<"asd@localhost/x3">>, J(G(c2s_trace()))),
      ?_eq(<<"carol@localhost/escalus-default-resource">>, J(G(bosh_trace())))].
 
-is_bind_result({_, _, _, [{_, _, _, [Jid]}]} = BindIQResult)
-  when ?IS_IQ(BindIQResult),
-       ?IS_BIND(hd(?EL(4, BindIQResult))),
-       ?IS_JID(Jid) ->
+is_bind_result({_, _, _, [{_, _, _, [_JidEl]}]} = BindIQResult)
+  when ?IS_BIND_RESULT(BindIQResult) ->
     true;
 is_bind_result(_) ->
     false.
