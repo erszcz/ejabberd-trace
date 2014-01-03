@@ -12,6 +12,7 @@
                        [any()]}.
 
 -include("ejabberd_trace_internal.hrl").
+-include("ejabberd_trace_lib.hrl").
 
 %% @doc Return `Application' environment variable `Par'.
 %% If no such variable is defined return `Def'.
@@ -24,19 +25,19 @@ get_env(Application, Par, Def) ->
             Val
     end.
 
--define(IS_IQ(XML, IQ),
-        XML =:= xmlel orelse XML =:= xmlelement,
-        IQ =:= "iq" orelse IQ =:= <<"iq">>).
-
--define(IS_BIND(XML, Bind),
-        XML =:= xmlel orelse XML =:= xmlelement,
-        Bind =:= "bind" orelse Bind =:= <<"bind">>).
-
 -spec extract_jid(xmlelement()) -> ejabberd_trace:jid() | false.
-extract_jid({XML, IQ, _, [{XML2, Bind, _, [{_, _, _, [{xmlcdata, Jid}]}]}]})
-  when ?IS_IQ(XML, IQ) andalso ?IS_BIND(XML2, Bind) ->
-    ?DEBUG(">>>>> found Jid: ~p~n", [Jid]),
-    Jid;
+%% TODO: compiler crashes on this head, report bug
+%% extract_jid({_, _, _, [{_, _, _, [Jid]} = Bind]} = BindIQResult)
+%%   when ?IS_XMLEL(BindIQResult),
+%%        ?IS_BIND(Bind),
+%%        ?IS_JID(Jid) ->
+extract_jid({_, _, _, [{_, _, _, [Jid]}]} = BindIQResult)
+  when ?IS_IQ(BindIQResult),
+       ?IS_BIND(hd(?EL(4, BindIQResult))),
+       ?IS_JID(Jid) ->
+    {_, _, _, [{xmlcdata, RealJid}]} = Jid,
+    ?DEBUG(">>>>> found Jid: ~p~n", [RealJid]),
+    RealJid;
 extract_jid(_) ->
     ?DEBUG(">>>>> found no Jid~n", []),
     false.
