@@ -112,12 +112,8 @@ The available filters are:
 
 - [x] Implement `routed_in` filter.
 
-- [ ] Make filter and formatter choices independent.
+- [x] Make filter and formatter choices independent.
       Filter should only filter traces and pass them to a formatter.
-
-      This interface needs some polishing.
-      How should the filters be exported from their module?
-      What should the highest level API operate on (atoms, funs)?
 
 - [x] Make filters composable.
       It should be possible to display `routed_in` and `tx` traces
@@ -141,3 +137,10 @@ The available filters are:
       once to fulfill one scenario.
 
 - [ ] Enable functioning in a distributed environment.
+
+      This seems to work. Sometimes.
+
+- [ ] In case of BOSH users the trigger might happen on two distinct
+      events: the call in c2s process or sending the message from BOSH
+      socket. Find a way to discriminate one (store opts in trace server
+      ets? and verify in do_trace_user?).
