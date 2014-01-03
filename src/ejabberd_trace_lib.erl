@@ -51,16 +51,25 @@ trace_handler(Trace, #tstate{} = TState)
     Pid = element(2, Trace),
     BindResult = get_bind_result(Trace),
     ?DEBUG(">>>>> c2s trigger matched pid=~p~n", [Pid]),
-    handle_trace(Trace, Pid, TState),
-    case get_jid(BindResult) of
-        false ->
-            ok;
-        Jid ->
-            do_trace_user(Jid, Pid, TState)
-    end,
-    TState;
+    trace_handler_match(Trace, Pid, get_jid(BindResult), TState);
+
+trace_handler(Trace, #tstate{} = TState)
+  when ?IS_BOSH_TRIGGER(Trace) ->
+    Pid = element(2, Trace),
+    BindResult = get_bind_result(Trace),
+    ?DEBUG(">>>>> bosh trigger matched pid=~p~n", [Pid]),
+    trace_handler_match(Trace, Pid, get_jid(BindResult), TState);
+
 trace_handler(Trace, TState) ->
     handle_trace(Trace, element(2, Trace), TState),
+    TState.
+
+trace_handler_match(Trace, Pid, false, TState) ->
+    handle_trace(Trace, Pid, TState),
+    TState;
+trace_handler_match(Trace, Pid, Jid, TState) ->
+    handle_trace(Trace, Pid, TState),
+    do_trace_user(Jid, Pid, TState),
     TState.
 
 get_bind_result({_, _, call, {ejabberd_c2s, send_element, _}} = Trace) ->
