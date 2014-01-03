@@ -1,7 +1,7 @@
 -module(ejabberd_trace_lib).
 
 -export([get_env/3,
-         extract_jid/1 ]).
+         get_jid/1]).
 
 %% dbg handler
 -export([trace_handler/2]).
@@ -25,20 +25,20 @@ get_env(Application, Par, Def) ->
             Val
     end.
 
--spec extract_jid(xmlelement()) -> ejabberd_trace:jid() | false.
+-spec get_jid(xmlelement()) -> ejabberd_trace:jid() | false.
 %% TODO: compiler crashes on this head, report bug
-%% extract_jid({_, _, _, [{_, _, _, [Jid]} = Bind]} = BindIQResult)
+%% get_jid({_, _, _, [{_, _, _, [Jid]} = Bind]} = BindIQResult)
 %%   when ?IS_XMLEL(BindIQResult),
 %%        ?IS_BIND(Bind),
 %%        ?IS_JID(Jid) ->
-extract_jid({_, _, _, [{_, _, _, [Jid]}]} = BindIQResult)
+get_jid({_, _, _, [{_, _, _, [Jid]}]} = BindIQResult)
   when ?IS_IQ(BindIQResult),
        ?IS_BIND(hd(?EL(4, BindIQResult))),
        ?IS_JID(Jid) ->
     {_, _, _, [{xmlcdata, RealJid}]} = Jid,
     ?DEBUG(">>>>> found Jid: ~p~n", [RealJid]),
     RealJid;
-extract_jid(_) ->
+get_jid(_) ->
     ?DEBUG(">>>>> found no Jid~n", []),
     false.
 
@@ -49,7 +49,7 @@ trace_handler(Trace, #tstate{} = TState)
     BindResult = 1/0,
     ?DEBUG(">>>>> c2s trigger matched pid=~p~n", [Pid]),
     handle_trace(Trace, Pid, TState),
-    case extract_jid(BindResult) of
+    case get_jid(BindResult) of
         false ->
             ok;
         Jid ->
@@ -159,8 +159,8 @@ c2s_trigger_test() ->
 bosh_trigger_test() ->
     error(unimplemented).
 
-extract_jid_test() ->
+get_jid_test() ->
     Jid = "qwe@localhost/x3",
-    ?assertEqual(Jid, extract_jid(example_bind(Jid))).
+    ?assertEqual(Jid, get_jid(example_bind(Jid))).
 
 -endif.
