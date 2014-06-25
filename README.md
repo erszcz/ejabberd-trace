@@ -11,6 +11,11 @@ The project is in rapid development - you have been warned.
 
 ## Getting started
 
+First, please start the application.
+This makes it auto-detect server string type in use.
+
+    > application:start(ejabberd_trace).
+
 ### Tracing a connected user by JID
 
 Trace a user who is connected to an ejabberd node:
@@ -34,9 +39,10 @@ but will connect in a short period of time using only the JID.
 
 It's useful in case you need to trace all communication
 (including connection initiation) happening between a c2s process
-and other parts of the system (including TCP connection).
+and other parts of the system (including TCP connection) - this
+variant requires specifying the resource.
 
-    > ejabberd_trace:new_user("asd@localhost").
+    > ejabberd_trace:new_user("asd@localhost/x4").
 
 Keep in mind **this might be heavy** on the system - until it's known which
 of the connected processes is the one you want to trace **all newly connecting
@@ -144,3 +150,7 @@ The available filters are:
       events: the call in c2s process or sending the message from BOSH
       socket. Find a way to discriminate one (store opts in trace server
       ets? and verify in do_trace_user?).
+
+- [ ] Auto-detect server string type - there's no reason to make user
+      set this manually. This is done when `application:start/1` is
+      called, but maybe it could be even more automatic?
