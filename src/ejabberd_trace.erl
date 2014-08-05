@@ -15,12 +15,13 @@
          stop/1]).
 
 %% Types
--export_type([jid/0,
-              filter/0,
-              formatter/0,
-              trace_opts/0,
-              sys_status/0,
-              string_type/0]).
+-export_type([ jid/0
+             , filter/0
+             , formatter/0
+             , trace_opts/0
+             , sys_status/0
+             , string_type/0
+             ]).
 
 -type jid() :: string().
 -type filter() :: ejabberd_trace_filter:filter().
@@ -59,22 +60,20 @@ new_user(Jid) ->
 -spec new_user(jid(), filter(), formatter(), trace_opts()) -> any() |
                                                               no_return().
 new_user(Jid, Filter, Format, Opts) ->
-    Args = [Jid, Filter, Format, Opts],
+        Args = [Jid, Filter, Format, Opts],
     validate_args(new_user, Args) orelse error(badarg, Args),
-    maybe_start_dbg(is_dbg_running(), Filter, Format),
+        maybe_start_dbg(is_dbg_running(), Filter, Format),
     ejabberd_trace_server:trace_new_user(fix_string(Jid)).
 
 %% @doc Trace an already logged in user given his/her Jid.
 %% @end
 
 -spec user(jid()) -> {ok, any()} |
-                     {error, not_found} |
-                     {error, {multiple_sessions, list()}} |
+					 {error, not_found} |
+					 {error, {multiple_sessions, list()}} |
                      {error, any()}.
 user(Jid) ->
-    validate_args(user, [Jid]) orelse error(badarg, [Jid]),
-    is_dbg_running() orelse dbg:tracer(),
-    with_c2s_pid(Jid, fun (C2SPid) -> dbg:p(C2SPid, [m]) end).
+    validate_args(user, [Jid]) orelse error(badarg, [Jid]), is_dbg_running() orelse dbg:tracer(), with_c2s_pid(Jid, fun (C2SPid) -> dbg:p(C2SPid, [m]) end).
 
 %% @doc Return sys:get_status/1 result of the process corresponding to Jid.
 %% @end
